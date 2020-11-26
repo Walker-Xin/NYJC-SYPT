@@ -6,7 +6,7 @@ import matplotlib.pyplot as plt
 m = 0.2
 m_0 = 0.5
 r = 0.1
-phi_0 = 60/180 * np.pi
+phi_0 = 30/180 * np.pi
 theta_dot_0 = np.pi/1
 g = 9.81
 
@@ -35,18 +35,19 @@ def theta_integral(phi):
     integral = integral_1 * integral_2
     return integral
 
-# Setting lower and upper bounds
-phi_i = 60/180 * np.pi
-phi_f = 180/180 * np.pi
+# Setting upper bound
+phi_f = 360/180 * np.pi
 
 # Computing integrals
-phi_range = np.linspace(phi_i, phi_f, num=50)
+phi_range = np.linspace(phi_0, phi_f, num=100)
 t_range = np.zeros(phi_range.size)
 theta_range = np.zeros(phi_range.size)
 for i in range(phi_range.size): 
-    t_range[i], error = integrate.quad(t_integral, phi_i, phi_range[i])
+    t_range[i], error = integrate.quad(t_integral, phi_0, phi_range[i])
 for i in range(phi_range.size): 
-    theta_range[i], error = integrate.quad(theta_integral, phi_i, phi_range[i])
+    theta_range[i], error = integrate.quad(theta_integral, phi_0, phi_range[i])
+
+print(phi_range, theta_range, t_range)
 
 # Visualisation
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
