@@ -2,6 +2,9 @@ import numpy as np
 import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 
+import warnings
+warnings.simplefilter('error')
+
 # Setting parameters
 m = 0.2
 m_0 = 0.5
@@ -45,8 +48,10 @@ phi_range = np.linspace(phi_0, phi_f, num=100)
 t_range = np.zeros(phi_range.size)
 theta_range = np.zeros(phi_range.size)
 for i in range(phi_range.size): 
+    print('t', i, 'phi', phi_range[i])
     t_range[i], error = integrate.quad(t_integral, phi_0, phi_range[i])
 for i in range(phi_range.size): 
+    print('theta', i, 'phi', phi_range[i])
     theta_range[i], error = integrate.quad(theta_integral, phi_0, phi_range[i])
 
 '''print(phi_range)
