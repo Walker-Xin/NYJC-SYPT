@@ -31,7 +31,7 @@ phi_range = y_range[:, 0]
 
 # Visualisation
 plt.xlabel('t/s')
-plt.ylabel('$\phi$ /rad')
+plt.ylabel('$\phi$/rad')
 
 plt.text(0.85, 0.15, r'$\dot \phi_0$ = {} rad'.format(phi_dot_0),
          {'fontsize': 10}, transform=plt.gca().transAxes)
