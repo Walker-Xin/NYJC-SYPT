@@ -25,65 +25,89 @@ def dy_dt(y, t):
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0])]
 
 
-# Generating data
+# Generating data with DE
 y_0 = [phi_0, phi_dot_0]  # Setting initial values
 t_range = np.linspace(0, 10, 1000)
 y_range = integrate.odeint(dy_dt, y_0, t_range)
 phi_range = y_range[:, 0]
+theta_range = -omega * t_range
+
+# Computing gradients
+phi_grad = np.diff(phi_range) / np.diff(t_range)
+phi_grad = np.append(phi_grad, phi_grad[-1])
 
 # Visualisation
-plt.xlabel('t/s')
-plt.ylabel('$\phi$/rad')
+fig, axs = plt.subplots(1, 2, figsize=(12, 7))
 
-plt.text(0.85, 0.15, r'$\dot \phi_0$ = {} rad/s'.format(phi_dot_0),
-         {'fontsize': 10}, transform=plt.gca().transAxes)
-plt.text(0.85, 0.10, r'$\omega$ = {} rad/s'.format(round(omega, 2)),
-         {'fontsize': 10}, transform=plt.gca().transAxes)
-plt.text(0.85, 0.05, r'$r$ = {} m'.format(round(r, 2)), {
-         'fontsize': 10}, transform=plt.gca().transAxes)
+axs[0].plot(t_range, phi_range)
+axs[0].set_xlabel('t/s')
+axs[0].set_ylabel('$\phi$/rad')
+axs[1].plot(t_range, phi_grad)
+axs[1].set_xlabel('t/s')
+axs[1].set_ylabel('$\dot \phi$/rad*s^-1')
 
-plt.plot(t_range, phi_range)
+plt.text(
+    1.01, 0.05, r'$\dot \phi_0$ = {} rad/s'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_0 text
+plt.text(
+    1.01, 0.00, r'$\omega$ = {} rad/s'.format(round(omega, 2)), transform=plt.gca().transAxes)  # theta_dot_0 text
+plt.text(
+    1.01, -0.05, r'$r$ = {} m'.format(round(r, 2)), transform=plt.gca().transAxes)  # Radius text
+
 plt.show()
 plt.close()
 
 # 2D animation
-fig, ax = plt.subplots(figsize=(8,8))
-ax.axis([-0.25,0.25,-0.25,0.25])
+fig, ax = plt.subplots(figsize=(8, 8))
+ax.axis([-0.25, 0.25, -0.25, 0.25])
 ax.set_xlabel('x')
 ax.set_ylabel('z')
 ax.set_aspect('equal')
 
-point, = ax.plot([], [], marker='.', color='r')
-
-circle = plt.Circle((0,0), 0.1, fill=False, lw=0.1)
-ax.add_artist(circle)
-
 x = r * np.sin(phi_range)
-
 y = -r * np.cos(phi_range)
 
-time_text = ax.text(0.05, 0.9, '', transform=ax.transAxes)
+point, = ax.plot([], [], marker='.', color='r')  # Initial bead plot
+
+circle = plt.Circle((0, 0), 0.1, fill=False, lw=0.1)  # Add static loop
+ax.add_artist(circle)
+
+time_text = ax.text(
+    0.05, 0.95, "Time", transform=ax.transAxes)  # Time text
+phi_dot_text = ax.text(
+    0.05, 0.90, "phi_dot", transform=ax.transAxes)  # phi_dot text
+theta_dot_text = ax.text(
+    0.05, 0.85, "$\dot \\theta$ = $\omega$ = {} rad/s".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
+radius_text = ax.text(
+    0.05, 0.80, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
+
 
 def animate_2D(i):
     x_coord = x[i]
     y_coord = y[i]
-    point.set_data([x_coord], [y_coord])
+    point.set_data([x_coord], [y_coord])  # Update bead data
 
-    time_text.set_text('t = {} s'.format(round(t_range[i], 2)))
-    return point, time_text
+    # Update time text
+    time_text.set_text('t = {} s'.format(
+        round(t_range[i], 2)))  
+    # Update phi_dot text
+    phi_dot_text.set_text(
+        '$\dot \phi$ = {} rad/s'.format(round(phi_grad[i], 2)))
+    return point, time_text, phi_dot_text
 
 
-anim_2D = animation.FuncAnimation(fig, animate_2D, frames=range(len(t_range)), interval=50, blit=True)
+anim_2D = animation.FuncAnimation(
+    fig, animate_2D, frames=range(len(t_range)), interval=50, blit=True)
 
 plt.show()
-start = time.time()
-anim_2D.save('animation_2D.mp4')
+# Uncomment to save animation
+'''start = time.time()
+anim_2D.save('\animation\animation_2D.mp4')
 end = time.time()
-print('2D Saving took {} s'.format(round(end-start, 2)))
+print('2D Saving took {} s'.format(round(end-start, 2)))'''
 plt.close()
 
 # 3D animation
-fig = plt.figure(figsize=(8,8))
+fig = plt.figure(figsize=(8, 8))
 ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
@@ -92,49 +116,63 @@ ax.axes.set_xlim3d(left=-0.15, right=0.15)
 ax.axes.set_ylim3d(bottom=-0.15, top=0.15)
 ax.axes.set_zlim3d(bottom=-0.15, top=0.15)
 ax.grid(False)
-# ax.view_init(azim=55, elev=45)
+# ax.view_init(azim=55, elev=45) # Set viewing angle
 
-point, = ax.plot([0], [0], [0], marker='.', color='r')
-
-theta_range = -omega * t_range
+# A set of angles for generating the inital loop
+circle_angle = np.linspace(0, 2*np.pi, 100)
 
 x = r * np.sin(phi_range) * np.sin(theta_range)
-
 y = r * np.sin(phi_range) * np.cos(theta_range)
-
 z = -r * np.cos(phi_range)
 
-x_circle = np.zeros(np.shape(theta_range))
+point, = ax.plot([0], [0], [0], marker='.', color='r')  # Initial bead plot
 
-y_circle = r * np.cos(theta_range)
+x_circle = np.zeros(np.shape(circle_angle))
+y_circle = r * np.cos(circle_angle)
+z_circle = r * np.sin(circle_angle)
 
-z_circle = r * np.sin(theta_range)
+circle, = ax.plot(
+    x_circle, y_circle, z_circle, color='black', lw=0.5)  # Initial loop plot
 
-circle, = ax.plot(x_circle, y_circle, z_circle, color='black', lw=0.1)
-
-time_text = ax.text2D(0.05, 0.95, "2D Text", transform=ax.transAxes)
+time_text = ax.text2D(
+    0.05, 0.95, "Time", transform=ax.transAxes)  # Time text
+phi_dot_text = ax.text2D(
+    0.05, 0.90, "phi_dot", transform=ax.transAxes)  # phi_dot text
+theta_dot_text = ax.text2D(
+    0.05, 0.85, "$\dot \\theta$ = $\omega$ = {} rad/s".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
+radius_text = ax.text2D(
+    0.05, 0.80, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
 
 
 def animate_3D(i):
     x_coord = x[i]
     y_coord = y[i]
     z_coord = z[i]
-    point.set_data([x_coord], [y_coord])
+    point.set_data([x_coord], [y_coord])  # Update bead data
     point.set_3d_properties([z_coord], 'z')
+
     x_circle_new = y_circle * np.sin(theta_range[i])
     y_circle_new = y_circle * np.cos(theta_range[i])
     z_circle_new = z_circle
-    circle.set_data(x_circle_new, y_circle_new)
+    circle.set_data(x_circle_new, y_circle_new)  # Update loop data
     circle.set_3d_properties(z_circle_new, 'z')
-    time_text.set_text('t = {} s'.format(round(t_range[i], 2)))
-    return point, circle, time_text
+
+    # Update time text
+    time_text.set_text('t = {} s'.format(
+        round(t_range[i], 2)))  
+    # Update phi_dot text
+    phi_dot_text.set_text(
+        '$\dot \phi$ = {} rad/s'.format(round(phi_grad[i], 2)))
+    return point, circle, time_text, phi_dot_text
 
 
-anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(int(len(t_range))), interval=50, blit=True)
+anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(
+    int(len(t_range))), interval=50, blit=True)
 
 plt.show()
-start = time.time()
-anim_3D.save('animation_3D.mp4')
+# Uncomment to save animation
+'''start = time.time()
+anim_3D.save('\animation\animation_3D.mp4')
 end = time.time()
-print('3D Saving took {} s'.format(round(end-start, 2)))
+print('3D Saving took {} s'.format(round(end-start, 2)))'''
 plt.close()
