@@ -3,6 +3,8 @@ import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
+import time
+animation.convert_path: 'C:\Program Files\ImageMagick-7.0.8-Q16\magick.exe'
 
 # Setting constants
 omega = np.pi/0.25  # Angular velocity of the loop in radian per second
@@ -13,7 +15,7 @@ A = omega**2
 B = g / r
 
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
-phi_dot_0 = 20  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
+phi_dot_0 = 0.1  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
 
 # Defining differential equations
@@ -33,7 +35,7 @@ phi_range = y_range[:, 0]
 plt.xlabel('t/s')
 plt.ylabel('$\phi$/rad')
 
-plt.text(0.85, 0.15, r'$\dot \phi_0$ = {} rad'.format(phi_dot_0),
+plt.text(0.85, 0.15, r'$\dot \phi_0$ = {} rad/s'.format(phi_dot_0),
          {'fontsize': 10}, transform=plt.gca().transAxes)
 plt.text(0.85, 0.10, r'$\omega$ = {} rad/s'.format(round(omega, 2)),
          {'fontsize': 10}, transform=plt.gca().transAxes)
@@ -71,9 +73,13 @@ def animate_2D(i):
     return point, time_text
 
 
-anim = animation.FuncAnimation(fig, animate_2D, frames=range(len(x)), interval=10, blit=True)
+anim_2D = animation.FuncAnimation(fig, animate_2D, frames=range(len(t_range)), interval=50, blit=True)
 
 plt.show()
+start = time.time()
+anim_2D.save('animation_2D.mp4')
+end = time.time()
+print('2D Saving took {} s'.format(round(end-start, 2)))
 plt.close()
 
 # 3D animation
@@ -124,7 +130,11 @@ def animate_3D(i):
     return point, circle, time_text
 
 
-anim = animation.FuncAnimation(fig, animate_3D, frames=range(len(t_range)), interval=1, blit=True)
+anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(int(len(t_range))), interval=50, blit=True)
 
 plt.show()
+start = time.time()
+anim_3D.save('animation_3D.mp4')
+end = time.time()
+print('3D Saving took {} s'.format(round(end-start, 2)))
 plt.close()

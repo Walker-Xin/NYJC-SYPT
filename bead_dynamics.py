@@ -3,6 +3,7 @@ import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
+import time
 
 import warnings
 # warnings.simplefilter('error') # Uncomment to make script stop should a warning is raised
@@ -141,7 +142,11 @@ def animate_3D(i):
     return point, circle, time_text
 
 
-anim = animation.FuncAnimation(fig, animate_3D, frames=range(len(x)), interval=20, blit=True)
+anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(len(x)), interval=50, blit=True)
 
 plt.show()
+start = time.time()
+anim_3D.save('animation_3D_free_loop.mp4')
+end = time.time()
+print('3D Saving took {} s'.format(round(end-start, 2)))
 plt.close()
