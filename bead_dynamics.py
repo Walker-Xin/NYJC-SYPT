@@ -138,7 +138,7 @@ def animate_3D(i):
     z_circle_new = z_circle
     circle.set_data(x_circle_new, y_circle_new)
     circle.set_3d_properties(z_circle_new, 'z')
-    time_text.set_text('t = {} s'.format(round(t_range[i], 2)))
+    time_text.set_text('t = {} s'.format(round(t_range[i], 2))) # Update time text
     return point, circle, time_text
 
 
