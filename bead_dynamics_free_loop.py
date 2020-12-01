@@ -170,7 +170,7 @@ anim_3D = animation.FuncAnimation(
 plt.show()
 # Uncomment to save animation
 '''start = time.time()
-anim_3D.save(r'animation\animation_3D_free_loop.mp4')
+anim_3D.save(r'animation/animation_3D_free_loop.mp4')
 end = time.time()
 print('3D saving took {} s'.format(round(end-start, 2)))'''
 plt.close()

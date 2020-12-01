@@ -101,7 +101,7 @@ anim_2D = animation.FuncAnimation(
 plt.show()
 # Uncomment to save animation
 '''start = time.time()
-anim_2D.save(r'animation\animation_2D.mp4')
+anim_2D.save(r'animation/animation_2D.mp4')
 end = time.time()
 print('2D saving took {} s'.format(round(end-start, 2)))'''
 plt.close()
@@ -172,7 +172,7 @@ anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(
 plt.show()
 # Uncomment to save animation
 '''start = time.time()
-anim_3D.save(r'animation\animation_3D.mp4')
+anim_3D.save(r'animation/animation_3D.mp4')
 end = time.time()
 print('3D saving took {} s'.format(round(end-start, 2)))'''
 plt.close()
