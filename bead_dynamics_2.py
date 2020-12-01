@@ -13,7 +13,7 @@ A = omega**2
 B = g / r
 
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
-phi_dot_0 = 0.01  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
+phi_dot_0 = 20  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
 
 # Defining differential equations
@@ -28,10 +28,6 @@ y_0 = [phi_0, phi_dot_0]  # Setting initial values
 t_range = np.linspace(0, 20, 1000)
 y_range = integrate.odeint(dy_dt, y_0, t_range)
 phi_range = y_range[:, 0]
-
-'''print(phi_range)
-print(t_range)
-print(len(phi_range), len(t_range))'''
 
 # Visualisation
 plt.xlabel('t/s')
@@ -48,14 +44,16 @@ plt.plot(t_range, phi_range)
 plt.show()
 plt.close()
 
-# 2D Animation
+# 2D animation
 fig, ax = plt.subplots()
 ax.axis([-0.25,0.25,-0.25,0.25])
+ax.set_xlabel('x')
+ax.set_ylabel('z')
 ax.set_aspect('equal')
 
 point, = ax.plot([], [], marker='.', color='r')
 
-circle = plt.Circle((0,0), 0.1, fill=False, lw=0.5)
+circle = plt.Circle((0,0), 0.1, fill=False, lw=0.1)
 ax.add_artist(circle)
 
 x = r * np.sin(phi_range)
@@ -63,19 +61,19 @@ x = r * np.sin(phi_range)
 y = -r * np.cos(phi_range)
 
 
-def animate(i):
+def animate_2D(i):
     x_coord = x[i]
     y_coord = y[i]
     point.set_data([x_coord], [y_coord])
     return point,
 
 
-anim = animation.FuncAnimation(fig, animate, frames=range(len(x)), interval=10, blit=True)
+anim = animation.FuncAnimation(fig, animate_2D, frames=range(len(x)), interval=10, blit=True)
 
 plt.show()
 plt.close()
 
-# 3D Animation
+# 3D animation
 fig = plt.figure()
 ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('x')
@@ -102,7 +100,7 @@ y_circle = r * np.cos(theta_range)
 
 z_circle = r * np.sin(theta_range)
 
-circle, = ax.plot(x_circle, y_circle, z_circle, color='black', lw=0.5)
+circle, = ax.plot(x_circle, y_circle, z_circle, color='black', lw=0.1)
 
 
 def animate_3D(i):
@@ -119,7 +117,7 @@ def animate_3D(i):
     return point, circle,
 
 
-anim = animation.FuncAnimation(fig, animate_3D, frames=range(len(x)), interval=10, blit=True)
+anim = animation.FuncAnimation(fig, animate_3D, frames=range(len(x)), interval=20, blit=True)
 
 plt.show()
 plt.close()
