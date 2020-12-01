@@ -95,7 +95,7 @@ plt.show()
 plt.close()
 
 # 3D animation
-fig = plt.figure()
+fig = plt.figure(figsize=(8,8))
 ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
@@ -123,6 +123,8 @@ z_circle = r * np.sin(theta_range)
 
 circle, = ax.plot(x_circle, y_circle, z_circle, color='black', lw=0.1)
 
+time_text = ax.text2D(0.05, 0.95, "2D Text", transform=ax.transAxes)
+
 
 def animate_3D(i):
     x_coord = x[i]
@@ -135,7 +137,8 @@ def animate_3D(i):
     z_circle_new = z_circle
     circle.set_data(x_circle_new, y_circle_new)
     circle.set_3d_properties(z_circle_new, 'z')
-    return point, circle,
+    time_text.set_text('t = {} s'.format(round(t_range[i], 2)))
+    return point, circle, time_text
 
 
 anim = animation.FuncAnimation(fig, animate_3D, frames=range(len(x)), interval=20, blit=True)

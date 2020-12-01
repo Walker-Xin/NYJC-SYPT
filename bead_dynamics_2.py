@@ -45,7 +45,7 @@ plt.show()
 plt.close()
 
 # 2D animation
-fig, ax = plt.subplots()
+fig, ax = plt.subplots(figsize=(8,8))
 ax.axis([-0.25,0.25,-0.25,0.25])
 ax.set_xlabel('x')
 ax.set_ylabel('z')
@@ -60,12 +60,15 @@ x = r * np.sin(phi_range)
 
 y = -r * np.cos(phi_range)
 
+time_text = ax.text(0.05, 0.9, '', transform=ax.transAxes)
 
 def animate_2D(i):
     x_coord = x[i]
     y_coord = y[i]
     point.set_data([x_coord], [y_coord])
-    return point,
+
+    time_text.set_text('t = {} s'.format(round(t_range[i], 2)))
+    return point, time_text
 
 
 anim = animation.FuncAnimation(fig, animate_2D, frames=range(len(x)), interval=10, blit=True)
@@ -74,7 +77,7 @@ plt.show()
 plt.close()
 
 # 3D animation
-fig = plt.figure()
+fig = plt.figure(figsize=(8,8))
 ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
@@ -82,7 +85,8 @@ ax.set_zlabel('z')
 ax.axes.set_xlim3d(left=-0.15, right=0.15)
 ax.axes.set_ylim3d(bottom=-0.15, top=0.15)
 ax.axes.set_zlim3d(bottom=-0.15, top=0.15)
-ax.view_init(azim=55, elev=45)
+ax.grid(False)
+# ax.view_init(azim=55, elev=45)
 
 point, = ax.plot([0], [0], [0], marker='.', color='r')
 
@@ -102,6 +106,8 @@ z_circle = r * np.sin(theta_range)
 
 circle, = ax.plot(x_circle, y_circle, z_circle, color='black', lw=0.1)
 
+time_text = ax.text2D(0.05, 0.95, "2D Text", transform=ax.transAxes)
+
 
 def animate_3D(i):
     x_coord = x[i]
@@ -114,10 +120,16 @@ def animate_3D(i):
     z_circle_new = z_circle
     circle.set_data(x_circle_new, y_circle_new)
     circle.set_3d_properties(z_circle_new, 'z')
-    return point, circle,
+    time_text.set_text('t = {} s'.format(round(t_range[i], 2)))
+    return point, circle, time_text
 
 
-anim = animation.FuncAnimation(fig, animate_3D, frames=range(len(x)), interval=20, blit=True)
+anim = animation.FuncAnimation(fig, animate_3D, frames=range(len(t_range)), interval=1, blit=True)
 
 plt.show()
+
+writergif = animation.PillowWriter(fps=30) 
+
+anim.save('ok.gif', writer=writergif)
+
 plt.close()
