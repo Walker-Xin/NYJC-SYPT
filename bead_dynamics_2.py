@@ -25,7 +25,7 @@ def dy_dt(y, t):
 
 # Generating data
 y_0 = [phi_0, phi_dot_0]  # Setting initial values
-t_range = np.linspace(0, 20, 1000)
+t_range = np.linspace(0, 10, 1000)
 y_range = integrate.odeint(dy_dt, y_0, t_range)
 phi_range = y_range[:, 0]
 
@@ -127,9 +127,4 @@ def animate_3D(i):
 anim = animation.FuncAnimation(fig, animate_3D, frames=range(len(t_range)), interval=1, blit=True)
 
 plt.show()
-
-writergif = animation.PillowWriter(fps=30) 
-
-anim.save('ok.gif', writer=writergif)
-
 plt.close()
