@@ -115,7 +115,6 @@ ax.set_zlabel('z')
 ax.axes.set_xlim3d(left=-0.15, right=0.15)
 ax.axes.set_ylim3d(bottom=-0.15, top=0.15)
 ax.axes.set_zlim3d(bottom=-0.15, top=0.15)
-ax.grid(False)
 # ax.view_init(azim=55, elev=45) # Set viewing angle
 
 # A set of angles for generating the inital loop
