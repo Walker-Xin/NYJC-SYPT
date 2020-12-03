@@ -6,11 +6,11 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import time
 
 # Setting parameters
-m = 0.5164/2 # Mass of the pendulum in kilogram
-I = 1.45*2 # Moment of inertia of the pendulum in kilogram per meter^2
+m = 0.5164 # Mass of the pendulum in kilogram
+I = (1.45)/10000 # Moment of inertia of the pendulum in kilogram per meter^2
 k = 2.8 # Spring constant in newton per meter
-delta = 7.86 # Torsion constant in newton meter
-epsilon = -0.7 # Coupling constant in newton
+delta = (7.86)/10000 # Torsion constant in newton meter
+epsilon = (9.27/1000)/-2 # Coupling constant in newton
 
 omega_z = np.sqrt(k/m)
 omega_theta = np.sqrt(delta/I)
@@ -19,29 +19,19 @@ a = omega_z**2 + omega_theta**2
 b = omega_z**2 - omega_theta**2
 c = 4*(epsilon**2)/(m*I)
 
-omega_1 = 0.5 * (a + np.sqrt(b**2 + c))
-omega_2 = 0.5 * (a - np.sqrt(b**2 + c))
+omega_1 = np.sqrt(0.5 * (a + np.sqrt(b**2 + c)))
+omega_2 = np.sqrt(0.5 * (a - np.sqrt(b**2 + c)))
 
 z_0 = 0.01 # Initial vertical displacement in meter
 theta_0 = 0 # Initial angular displacement in radian
 
-
-# Defining differential equations
-def dy_dt(y, t):
-    z_1, z_2, theta_1, theta_2 = y
-
-    dy_dt = [z_2, (epsilon/m)*theta_1-(k/m)*z_1, theta_2, (epsilon/I)*z_1-(delta/I)*theta_1]
-    return dy_dt
-
-
-# Generating data with Euler's method
-t_max=30 # simulation time in seconds
+t_max=60 # simulation time in seconds
 iterations=3000 # total number of iterations
 t_step=t_max/iterations # simulation time step
-t_range=np.arange(0, t_max, step=t_step)
+t_range = np.linspace(0, t_max, iterations)
 
-# Allocating data sets and setting initial conditions
-theta_range=np.zeros(iterations)
+# Generating data with Euler's method
+'''theta_range=np.zeros(iterations)
 theta_range[0]=theta_0
 z_range=np.zeros(iterations)
 z_range[0]=z_0
@@ -65,38 +55,38 @@ for n in range(1,iterations):
 
     theta_dotdot_range[n]=(epsilon*z_range[n]-delta*theta_range[n])/I # theta_dotdot
     z_dotdot_range[n]=(epsilon*theta_range[n]-k*z_range[n])/m #z_dotdot
+'''
+# Defining differential equations
+def dy_dt(y, t):
+    z_1, z_2, theta_1, theta_2 = y
+
+    dy_dt = [z_2, (epsilon/m)*theta_1-(k/m)*z_1, theta_2, (epsilon/I)*z_1-(delta/I)*theta_1]
+    return dy_dt
+
 
 # Generating data with numerical DE
-'''y_0 = [z_0, 0, theta_0, 0]
-t_range = np.linspace(0, 100, 1000)
+y_0 = [z_0, 0, theta_0, 0]
 y_range = integrate.odeint(dy_dt, y_0, t_range)
 z_range = y_range[:, 0]
 z_dot_range = y_range[:, 1]
 theta_range = y_range[:, 2]
-theta_dot_range = y_range[:, 3]'''
+theta_dot_range = y_range[:, 3]
 
 # Computing gradients
-'''z_grad = np.diff(z_range) / np.diff(t_range)
+z_grad = np.diff(z_range) / np.diff(t_range)
 z_grad = np.append(z_grad, z_grad[-1])
 theta_grad = np.diff(theta_range) / np.diff(t_range)
 theta_grad = np.append(theta_grad, theta_grad[-1])
 
 print(z_grad[:10], z_dot_range[:10])
 
-print(theta_grad[:10], theta_dot_range[:10])'''
+print(theta_grad[:10], theta_dot_range[:10])
 
 # Generating data with analytical solution
-t_range = np.linspace(0, 30, 3000)
-B = ((epsilon*z_0)/I + (omega_2**2 - omega_theta**2)*theta_0)/(omega_2**2 - omega_1**2)
+'''B = ((epsilon*z_0)/I + (omega_2**2 - omega_theta**2)*theta_0)/(omega_2**2 - omega_1**2)
 D = ((epsilon*z_0)/I + (omega_1**2 - omega_theta**2)*theta_0)/(omega_1**2 - omega_2**2)
 theta_range = B*np.cos(omega_1*t_range) + D*np.cos(omega_2*t_range)
-z_range = ((delta - I*(omega_1**2))*B*np.cos(omega_1*t_range) + (delta - I*(omega_2**2))*D*np.cos(omega_2*t_range))/epsilon
-
-# Uncomment to use formula given in a paper
-'''epsilon = epsilon * (-2)
-K = 1 / (omega_1**2-omega_2**2)
-theta_range = ((epsilon*z_0)/(2*I))*K*(np.cos(omega_1*t_range) - np.cos(omega_2*t_range)) + theta_0*K*((omega_1**2 - omega_theta**2)*np.cos(omega_2*t_range) - (omega_2**2 - omega_theta**2)*np.cos(omega_1*t_range))
-z_range = z_0*k*((omega_1**2 - omega_theta**2)*np.cos(omega_1*t_range) - (omega_2**2 - omega_theta**2)*np.cos(omega_2*t_range)) - (2*I*theta_0/epsilon)*K*(omega_1**2 - omega_theta**2)*(omega_2**2 - omega_theta**2)*(np.cos(omega_1*t_range) - np.cos(omega_2*t_range))'''
+z_range = ((delta - I*(omega_1**2))*B*np.cos(omega_1*t_range) + (delta - I*(omega_2**2))*D*np.cos(omega_2*t_range))/epsilon'''
 
 # Visualisation separated
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
@@ -104,16 +94,16 @@ fig, axs = plt.subplots(1, 2, figsize=(12, 7))
 axs[0].plot(t_range, theta_range)
 axs[0].set_xlabel('t/s')
 axs[0].set_ylabel('$\\theta$/rad')
-axs[1].plot(t_range, z_range)
+axs[1].plot(t_range, 100*z_range)
 axs[1].set_xlabel('t/s')
-axs[1].set_ylabel('$z$/m')
+axs[1].set_ylabel('$z$/cm')
 
 plt.text(
     1.01, 0.05, '$m$ = {} kg'.format(m, 2), transform=plt.gca().transAxes)  # m text
 plt.text(
     1.01, 0.00, '$I$ = {} kg/m^2'.format(round(I, 2)), transform=plt.gca().transAxes)  # I text
 plt.text(
-    1.01, -0.05, '$z_0$ = {} m'.format(round(z_0, 2)), transform=plt.gca().transAxes)  # z_0 text
+    1.01, -0.05, '$z_0$ = {} cm'.format(round(100*z_0, 2)), transform=plt.gca().transAxes)  # z_0 text
 plt.text(
     1.01, -0.10, '$\\theta_0$ = {} rad'.format(round(theta_0, 2)), transform=plt.gca().transAxes)  # theta_0 text
 
@@ -132,8 +122,8 @@ ax1.tick_params(axis='y', labelcolor=color)
 ax2 = ax1.twinx()  # instantiate a second axes that shares the same x-axis
 
 color = 'tab:blue'
-ax2.set_ylabel('$z$/m', color=color)
-ax2.plot(t_range, z_range, color=color)
+ax2.set_ylabel('$z$/cm', color=color)
+ax2.plot(t_range, 100*z_range, color=color)
 ax2.tick_params(axis='y', labelcolor=color)
 
 plt.show()
@@ -175,7 +165,7 @@ def animate_3D(i):
     # Update theta text
     theta_text.set_text('$\\theta$ = {} rad'.format(round(theta_range[i], 2)))
     # Update z text
-    z_text.set_text('$z$ = {} m'.format(round(z_range[i], 2)))
+    z_text.set_text('$z$ = {} cm'.format(round(100*z_range[i], 2)))
     return line, time_text, theta_text, z_text
 
 anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(int(len(t_range))), interval=10, blit=True)
