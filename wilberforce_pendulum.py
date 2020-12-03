@@ -25,9 +25,10 @@ omega_2 = np.sqrt(0.5 * (a - np.sqrt(b**2 + c)))
 z_0 = 0.01 # Initial vertical displacement in meter
 theta_0 = 0 # Initial angular displacement in radian
 
-t_max=60 # simulation time in seconds
+t_max=30 # simulation time in seconds
 iterations=3000 # total number of iterations
 t_step=t_max/iterations # simulation time step
+print('Producing simulation with {}s between frames...'.format(t_step))
 t_range = np.linspace(0, t_max, iterations)
 
 # Generating data with Euler's method
@@ -54,58 +55,60 @@ for n in range(1,iterations):
     z_dot_range[n]=z_dot_range[n-1]+z_dotdot_range[n-1]*t_step # z_dot
 
     theta_dotdot_range[n]=(epsilon*z_range[n]-delta*theta_range[n])/I # theta_dotdot
-    z_dotdot_range[n]=(epsilon*theta_range[n]-k*z_range[n])/m #z_dotdot
-'''
-# Defining differential equations
-def dy_dt(y, t):
+    z_dotdot_range[n]=(epsilon*theta_range[n]-k*z_range[n])/m #z_dotdot'''
+
+# Generating data with numerical DE
+'''def dy_dt(y, t): # Defining differential equations
     z_1, z_2, theta_1, theta_2 = y
 
     dy_dt = [z_2, (epsilon/m)*theta_1-(k/m)*z_1, theta_2, (epsilon/I)*z_1-(delta/I)*theta_1]
     return dy_dt
 
 
-# Generating data with numerical DE
-y_0 = [z_0, 0, theta_0, 0]
+y_0 = [z_0, 0, theta_0, 0] # Setting intial conditions
 y_range = integrate.odeint(dy_dt, y_0, t_range)
 z_range = y_range[:, 0]
 z_dot_range = y_range[:, 1]
 theta_range = y_range[:, 2]
-theta_dot_range = y_range[:, 3]
-
-# Computing gradients
-z_grad = np.diff(z_range) / np.diff(t_range)
-z_grad = np.append(z_grad, z_grad[-1])
-theta_grad = np.diff(theta_range) / np.diff(t_range)
-theta_grad = np.append(theta_grad, theta_grad[-1])
-
-print(z_grad[:10], z_dot_range[:10])
-
-print(theta_grad[:10], theta_dot_range[:10])
+theta_dot_range = y_range[:, 3]'''
 
 # Generating data with analytical solution
-'''B = ((epsilon*z_0)/I + (omega_2**2 - omega_theta**2)*theta_0)/(omega_2**2 - omega_1**2)
+B = ((epsilon*z_0)/I + (omega_2**2 - omega_theta**2)*theta_0)/(omega_2**2 - omega_1**2)
 D = ((epsilon*z_0)/I + (omega_1**2 - omega_theta**2)*theta_0)/(omega_1**2 - omega_2**2)
 theta_range = B*np.cos(omega_1*t_range) + D*np.cos(omega_2*t_range)
-z_range = ((delta - I*(omega_1**2))*B*np.cos(omega_1*t_range) + (delta - I*(omega_2**2))*D*np.cos(omega_2*t_range))/epsilon'''
+z_range = ((delta - I*(omega_1**2))*B*np.cos(omega_1*t_range) + (delta - I*(omega_2**2))*D*np.cos(omega_2*t_range))/epsilon
+theta_dot_range = -B*omega_1*np.cos(omega_1*t_range) - D*omega_2*np.cos(omega_2*t_range)
+z_dot_range = (-(delta - I*(omega_1**2))*B*omega_1*np.cos(omega_1*t_range) - (delta - I*(omega_2**2))*D*omega_2*np.cos(omega_2*t_range))/epsilon
 
 # Visualisation separated
-fig, axs = plt.subplots(1, 2, figsize=(12, 7))
+fig, axs = plt.subplots(2, 2, figsize=(12, 7))
 
-axs[0].plot(t_range, theta_range)
-axs[0].set_xlabel('t/s')
-axs[0].set_ylabel('$\\theta$/rad')
-axs[1].plot(t_range, 100*z_range)
-axs[1].set_xlabel('t/s')
-axs[1].set_ylabel('$z$/cm')
+color = 'tab:red'
+axs[0][0].plot(t_range, theta_range, color=color)
+axs[0][0].set_xlabel('t/s')
+axs[0][0].set_ylabel('$\\theta$/rad')
+color = 'coral'
+axs[1][0].plot(t_range, theta_dot_range, color=color)
+axs[1][0].set_xlabel('t/s')
+axs[1][0].set_ylabel('$\dot \\theta$/rad$\cdot$s$^-1$')
+
+color = 'tab:blue'
+axs[0][1].plot(t_range, 100*z_range, color=color)
+axs[0][1].set_xlabel('t/s')
+axs[0][1].set_ylabel('$z$/cm')
+color = 'lightskyblue'
+axs[1][1].plot(t_range, 100*z_dot_range, color=color)
+axs[1][1].set_xlabel('t/s')
+axs[1][1].set_ylabel('$\dot z$/cm$\cdot$s$^-1$')
 
 plt.text(
-    1.01, 0.05, '$m$ = {} kg'.format(m, 2), transform=plt.gca().transAxes)  # m text
+    1.01, 0.075, '$m$ = {} kg'.format(m, 2), transform=plt.gca().transAxes)  # m text
 plt.text(
-    1.01, 0.00, '$I$ = {} kg/m^2'.format(round(I, 2)), transform=plt.gca().transAxes)  # I text
+    1.01, 0.00, '$I$ = {} kg/m$^2$'.format(round(I, 2)), transform=plt.gca().transAxes)  # I text
 plt.text(
-    1.01, -0.05, '$z_0$ = {} cm'.format(round(100*z_0, 2)), transform=plt.gca().transAxes)  # z_0 text
+    1.01, -0.075, '$z_0$ = {} cm'.format(round(100*z_0, 2)), transform=plt.gca().transAxes)  # z_0 text
 plt.text(
-    1.01, -0.10, '$\\theta_0$ = {} rad'.format(round(theta_0, 2)), transform=plt.gca().transAxes)  # theta_0 text
+    1.01, -0.15, '$\\theta_0$ = {} rad'.format(round(theta_0, 2)), transform=plt.gca().transAxes)  # theta_0 text
 
 plt.show()
 plt.close()
@@ -163,17 +166,17 @@ def animate_3D(i):
     # Update time text
     time_text.set_text('t = {} s'.format(round(t_range[i], 2)))  
     # Update theta text
-    theta_text.set_text('$\\theta$ = {} rad'.format(round(theta_range[i], 2)))
+    theta_text.set_text('$\\theta$ = {} rad = {} degrees'.format(round(theta_range[i], 2), round(np.degrees(theta_range[i]), 1)))
     # Update z text
     z_text.set_text('$z$ = {} cm'.format(round(100*z_range[i], 2)))
     return line, time_text, theta_text, z_text
 
-anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(int(len(t_range))), interval=10, blit=True)
+anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(int(len(t_range))), interval=t_step*1000, blit=True)
 
 plt.show()
 # Uncomment to save animation
-'''start = time.time()
+start = time.time()
 anim_3D.save(r'animation/pendulum.mp4')
 end = time.time()
-print('3D saving took {} s'.format(round(end-start, 2)))'''
+print('3D saving took {} s'.format(round(end-start, 2)))
 plt.close()
