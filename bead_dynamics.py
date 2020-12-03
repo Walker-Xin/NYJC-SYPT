@@ -17,24 +17,25 @@ B = g / r
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
 phi_dot_0 = 0.1  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
+t_max=30 # simulation time in seconds
+iterations=3000 # total number of iterations
+t_step=t_max/iterations # simulation time step
+print('Producing simulation with {}s between frames...'.format(t_step))
+t_range = np.linspace(0, t_max, iterations)
 
-# Defining differential equations
-def dy_dt(y, t):
+
+# Generating data with numerical DE
+def dy_dt(y, t): # Defining differential equations
     # Solving the equation phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi)
     # Let y be a vector y = [phi_1, phi_2], where phi_1 = phi and phi_2 = phi_dot
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0])]
 
 
-# Generating data with DE
-y_0 = [phi_0, phi_dot_0]  # Setting initial values
-t_range = np.linspace(0, 10, 1000)
+y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
 y_range = integrate.odeint(dy_dt, y_0, t_range)
 phi_range = y_range[:, 0]
+phi_dot_range = y_range[:, 1]
 theta_range = -omega * t_range
-
-# Computing gradients
-phi_grad = np.diff(phi_range) / np.diff(t_range)
-phi_grad = np.append(phi_grad, phi_grad[-1])
 
 # Visualisation
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
@@ -42,14 +43,14 @@ fig, axs = plt.subplots(1, 2, figsize=(12, 7))
 axs[0].plot(t_range, phi_range)
 axs[0].set_xlabel('t/s')
 axs[0].set_ylabel('$\phi$/rad')
-axs[1].plot(t_range, phi_grad)
+axs[1].plot(t_range, phi_dot_range)
 axs[1].set_xlabel('t/s')
-axs[1].set_ylabel('$\dot \phi$/rad*s^-1')
+axs[1].set_ylabel('$\dot \phi$/rad$\cdot$s$^-1$)
 
 plt.text(
-    1.01, 0.05, r'$\dot \phi_0$ = {} rad/s'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_0 text
+    1.01, 0.05, r'$\dot \phi_0$ = {} rad$\cdot$s$^-1$'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_0 text
 plt.text(
-    1.01, 0.00, r'$\omega$ = {} rad/s'.format(round(omega, 2)), transform=plt.gca().transAxes)  # theta_dot_0 text
+    1.01, 0.00, r'$\omega$ = {} rad$\cdot$s$^-1$'.format(round(omega, 2)), transform=plt.gca().transAxes)  # theta_dot_0 text
 plt.text(
     1.01, -0.05, r'$r$ = {} m'.format(round(r, 2)), transform=plt.gca().transAxes)  # Radius text
 
@@ -76,7 +77,7 @@ time_text = ax.text(
 phi_dot_text = ax.text(
     0.05, 0.90, "phi_dot", transform=ax.transAxes)  # phi_dot text
 theta_dot_text = ax.text(
-    0.05, 0.85, "$\dot \\theta$ = $\omega$ = {} rad/s".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
+    0.05, 0.85, "$\dot \\theta$ = $\omega$ = {} rad$\cdot$s$^-1$".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
 radius_text = ax.text(
     0.05, 0.80, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
 
@@ -91,7 +92,7 @@ def animate_2D(i):
         round(t_range[i], 2)))  
     # Update phi_dot text
     phi_dot_text.set_text(
-        '$\dot \phi$ = {} rad/s'.format(round(phi_grad[i], 2)))
+        '$\dot \phi$ = {} rad$\cdot$s$^-1$'.format(round(phi_dot_range[i], 2)))
     return point, time_text, phi_dot_text
 
 
@@ -138,7 +139,7 @@ time_text = ax.text2D(
 phi_dot_text = ax.text2D(
     0.05, 0.90, "phi_dot", transform=ax.transAxes)  # phi_dot text
 theta_dot_text = ax.text2D(
-    0.05, 0.85, "$\dot \\theta$ = $\omega$ = {} rad/s".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
+    0.05, 0.85, "$\dot \\theta$ = $\omega$ = {} rad$\cdot$s$^-1$".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
 radius_text = ax.text2D(
     0.05, 0.80, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
 
@@ -161,7 +162,7 @@ def animate_3D(i):
         round(t_range[i], 2)))  
     # Update phi_dot text
     phi_dot_text.set_text(
-        '$\dot \phi$ = {} rad/s'.format(round(phi_grad[i], 2)))
+        '$\dot \phi$ = {} rad$\cdot$s$^-1$'.format(round(phi_dot_range[i], 2)))
     return point, circle, time_text, phi_dot_text
 
 
