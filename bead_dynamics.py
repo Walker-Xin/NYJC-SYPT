@@ -10,6 +10,10 @@ animation.convert_path: 'C:\Program Files\ImageMagick-7.0.8-Q16\magick.exe'
 omega = np.pi/0.25  # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
 r = 0.1  # Radius of the loop in meter
+mu = 0.2
+m = 0.01
+b = 0.05
+k = b/m
 
 A = omega**2
 B = g / r
@@ -17,22 +21,35 @@ B = g / r
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
 phi_dot_0 = 0.1  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
-t_max=30 # simulation time in seconds
-iterations=3000 # total number of iterations
+t_max=10 # simulation time in seconds
+iterations=1000 # total number of iterations
 t_step=t_max/iterations # simulation time step
-print('Producing simulation with {}s between frames...'.format(t_step))
+print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
 
 
 # Generating data with numerical DE
-def dy_dt(y, t): # Defining differential equations
+# Defining differential equations
+# Let y be a vector y = [phi_1, phi_2], where phi_1 = phi and phi_2 = phi_dot
+def dy_dt(y, t):
     # Solving the equation phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi)
-    # Let y be a vector y = [phi_1, phi_2], where phi_1 = phi and phi_2 = phi_dot
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0])]
 
 
+def dy_dt_friction(y, t):
+    # Solving the equation phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
+    return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - k*y[1]]
+
+
+def dy_dt_dry_friction(y, t):
+    if A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) <= mu*A:
+        return [y[1], 0]
+    else:
+        return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - mu*A]
+    
+
 y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
-y_range = integrate.odeint(dy_dt, y_0, t_range)
+y_range = integrate.odeint(dy_dt_dry_friction, y_0, t_range)
 phi_range = y_range[:, 0]
 phi_dot_range = y_range[:, 1]
 theta_range = -omega * t_range
@@ -45,7 +62,7 @@ axs[0].set_xlabel('t/s')
 axs[0].set_ylabel('$\phi$/rad')
 axs[1].plot(t_range, phi_dot_range)
 axs[1].set_xlabel('t/s')
-axs[1].set_ylabel('$\dot \phi$/rad$\cdot$s$^-1$)
+axs[1].set_ylabel('$\dot \phi$/rad$\cdot$s$^-1$')
 
 plt.text(
     1.01, 0.05, r'$\dot \phi_0$ = {} rad$\cdot$s$^-1$'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_0 text
@@ -167,7 +184,7 @@ def animate_3D(i):
 
 
 anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(
-    int(len(t_range))), interval=50, blit=True)
+    int(len(t_range))), interval=t_step, blit=True)
 
 plt.show()
 # Uncomment to save animation
