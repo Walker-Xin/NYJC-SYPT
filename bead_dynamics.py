@@ -4,13 +4,12 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
 import time
-animation.convert_path: 'C:\Program Files\ImageMagick-7.0.8-Q16\magick.exe'
 
 # Setting constants
 omega = np.pi/0.25  # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
 r = 0.1  # Radius of the loop in meter
-mu = 0.2
+mu = 0.1
 m = 0.01
 b = 0.05
 k = b/m
@@ -22,7 +21,7 @@ phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead
 phi_dot_0 = 0.1  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
 t_max=10 # simulation time in seconds
-iterations=1000 # total number of iterations
+iterations=10000 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
@@ -32,27 +31,48 @@ t_range = np.linspace(0, t_max, iterations)
 # Defining differential equations
 # Let y be a vector y = [phi_1, phi_2], where phi_1 = phi and phi_2 = phi_dot
 def dy_dt(y, t):
-    # Solving the equation phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi)
+    # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi)
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0])]
 
 
 def dy_dt_friction(y, t):
-    # Solving the equation phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
+    # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - k*y[1]]
 
 
 def dy_dt_dry_friction(y, t):
-    if A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) <= mu*A:
-        return [y[1], 0]
-    else:
-        return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - mu*A]
+    u = y[1]/np.absolute(y[1])
+    fr = mu*(B*(1-np.cos(y[0]) - y[1]**2 - A*(np.sin(y[0])**2)))
+    return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - u*fr]
     
 
-y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
+'''y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
 y_range = integrate.odeint(dy_dt_dry_friction, y_0, t_range)
 phi_range = y_range[:, 0]
 phi_dot_range = y_range[:, 1]
+theta_range = -omega * t_range'''
+
+# Generating data with Euler's method
 theta_range = -omega * t_range
+
+phi_range=np.zeros(iterations)
+phi_range[0]=phi_0
+
+phi_dot_range=np.zeros(iterations)
+phi_dot_range[0]=phi_dot_0
+
+phi_dotdot_range=np.zeros(iterations)
+fr = mu*(B*(1-np.cos(phi_0) - phi_dot_0**2 - A*(np.sin(phi_dot_0)**2)))
+phi_dotdot_range[0]=A*np.sin(phi_0)*np.cos(phi_0) - B*np.sin(phi_0) - phi_dot_0/np.absolute(phi_dot_0)*fr
+
+for n in range(1,iterations):
+    phi_range[n]=phi_range[n-1]+phi_dot_range[n-1]*t_step # z
+
+    phi_dot_range[n]=phi_dot_range[n-1]+phi_dotdot_range[n-1]*t_step # z_dot
+
+    u = phi_dot_range[n]/np.absolute(phi_dot_range[n])
+    fr = mu*(B*(1-np.cos(phi_range[n]) - phi_dot_range[n]**2 - A*(np.sin(phi_dot_range[n])**2)))
+    phi_dotdot_range[n]=A*np.sin(phi_range[n])*np.cos(phi_range[n]) - B*np.sin(phi_range[n]) + u*fr #z_dotdot
 
 # Visualisation
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
@@ -114,7 +134,7 @@ def animate_2D(i):
 
 
 anim_2D = animation.FuncAnimation(
-    fig, animate_2D, frames=range(len(t_range)), interval=50, blit=True)
+    fig, animate_2D, frames=int(len(t_range)), interval=t_step, blit=True)
 
 plt.show()
 # Uncomment to save animation
@@ -183,8 +203,8 @@ def animate_3D(i):
     return point, circle, time_text, phi_dot_text
 
 
-anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(
-    int(len(t_range))), interval=t_step, blit=True)
+anim_3D = animation.FuncAnimation(
+    fig, animate_3D, frames=int(len(t_range)), interval=t_step, blit=True)
 
 plt.show()
 # Uncomment to save animation
