@@ -9,7 +9,7 @@ import time
 omega = np.pi/0.25 # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
 r = 0.1  # Radius of the loop in meter
-mu = 0.2
+mu = 0.01
 m = 0.01
 b = 0.05
 k = b/m
@@ -18,7 +18,7 @@ A = omega**2
 B = g / r
 
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
-phi_dot_0 = 0.01  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
+phi_dot_0 = 0.001  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
 t_max=10 # simulation time in seconds
 iterations=1000 # total number of iterations
@@ -41,8 +41,8 @@ def dy_dt_friction(t, y):
 
 
 def dy_dt_dry_friction(t, y):
-    if abs(y[1]) < 0.00001: # Stop the calculation when the velocity is essentially zero
-        return [0, 0]
+    if abs(y[1]) < 0.00001: # Stop the calculation of phi_dotdot when the phi_dot is essentially zero
+        return [y[1], 0]
     else:
         u = y[1]/np.absolute(y[1])
         f_r = m*g*(1-np.cos(y[0])) - m*r*(y[1]**2 + A*(np.sin(y[0])**2))
