@@ -6,10 +6,10 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import time
 
 # Setting parameters
-m = 0.5164 # Mass of the pendulum in kilogram
-I = (1.45)/10000 # Moment of inertia of the pendulum in kilogram per meter^2
-k = 2.8 # Spring constant in newton per meter
-delta = (7.86)/10000 # Torsion constant in newton meter
+m = (449.85+4.95*0.337)/1000 # Mass of the pendulum in kilogram
+I = (1.058)/10000 + (3.05*0.337)/10000000 # Moment of inertia of the pendulum in kilogram per meter^2
+k = 2.14 # Spring constant in newton per meter
+delta = (2.04)/1000 # Torsion constant in newton meter
 epsilon = (9.27/1000)/-2 # Coupling constant in newton
 
 omega_z = np.sqrt(k/m)
@@ -23,10 +23,10 @@ omega_1 = np.sqrt(0.5 * (a + np.sqrt(b**2 + c)))
 omega_2 = np.sqrt(0.5 * (a - np.sqrt(b**2 + c)))
 
 z_0 = 0.01 # Initial vertical displacement in meter
-theta_0 = 0 # Initial angular displacement in radian
+theta_0 = 30/180 * np.pi # Initial angular displacement in radian
 
-t_max=30 # simulation time in seconds
-iterations=3000 # total number of iterations
+t_max=5 # simulation time in seconds
+iterations=500 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames...'.format(t_step))
 t_range = np.linspace(0, t_max, iterations)
@@ -141,7 +141,7 @@ ax.set_zlabel('z')
 ax.axes.set_xlim3d(left=-0.15, right=0.15)
 ax.axes.set_ylim3d(bottom=-0.15, top=0.15)
 ax.axes.set_zlim3d(bottom=1.25*(np.min(z_range)), top=1.25*(np.max(z_range)))
-# ax.view_init(azim=55, elev=45) # Set viewing angle
+ax.view_init(azim=0, elev=90) # Set viewing angle
 
 x = np.zeros(10)
 y = np.linspace(-0.1, 0.1, 10)
@@ -176,7 +176,7 @@ anim_3D = animation.FuncAnimation(fig, animate_3D, frames=range(int(len(t_range)
 plt.show()
 # Uncomment to save animation
 start = time.time()
-anim_3D.save(r'animation/pendulum.mp4')
+'''anim_3D.save(r'animation/pendulum.mp4')
 end = time.time()
-print('3D saving took {} s'.format(round(end-start, 2)))
+print('3D saving took {} s'.format(round(end-start, 2)))'''
 plt.close()
