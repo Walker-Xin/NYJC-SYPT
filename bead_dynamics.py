@@ -6,10 +6,10 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import time
 
 # Setting constants
-omega = np.pi/0.25  # Angular velocity of the loop in radian per second
+omega = np.pi/0.30  # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
 r = 0.1  # Radius of the loop in meter
-mu = 0.05
+mu = 0.2
 m = 0.01
 b = 0.05
 k = b/m
@@ -18,7 +18,7 @@ A = omega**2
 B = g / r
 
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
-phi_dot_0 = 0.1  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
+phi_dot_0 = 0.01  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
 t_max=10 # simulation time in seconds
 iterations=1000 # total number of iterations
@@ -101,7 +101,7 @@ axs[1].set_xlabel('t/s')
 axs[1].set_ylabel('$\dot \phi$/rad$\cdot$s$^-1$')
 
 plt.text(
-    1.01, 0.05, r'$\dot \phi_0$ = {} rad$\cdot$s$^-1$'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_0 text
+    1.01, 0.05, r'$\dot \phi_0$ = {} rad$\cdot$s$^-1$'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_dot_0 text
 plt.text(
     1.01, 0.00, r'$\omega$ = {} rad$\cdot$s$^-1$'.format(round(omega, 2)), transform=plt.gca().transAxes)  # theta_dot_0 text
 plt.text(
@@ -127,12 +127,14 @@ ax.add_artist(circle)
 
 time_text = ax.text(
     0.05, 0.95, "Time", transform=ax.transAxes)  # Time text
+phi_text = ax.text(
+    0.05, 0.90, "phi", transform=ax.transAxes)  # phi text
 phi_dot_text = ax.text(
-    0.05, 0.90, "phi_dot", transform=ax.transAxes)  # phi_dot text
+    0.05, 0.85, "phi_dot", transform=ax.transAxes)  # phi_dot text
 theta_dot_text = ax.text(
-    0.05, 0.85, "$\dot \\theta$ = $\omega$ = {} rad$\cdot$s$^-1$".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
+    0.05, 0.80, "$\dot \\theta$ = $\omega$ = {} rad$\cdot$s$^-1$".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
 radius_text = ax.text(
-    0.05, 0.80, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
+    0.05, 0.75, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
 
 
 def animate_2D(i):
@@ -142,11 +144,14 @@ def animate_2D(i):
 
     # Update time text
     time_text.set_text('t = {} s'.format(
-        round(t_range[i], 2)))  
+        round(t_range[i], 2)))
+    # Update phi text
+    phi_text.set_text(
+        '$\phi$ = {} rad'.format(round(phi_range[i], 2)))
     # Update phi_dot text
     phi_dot_text.set_text(
         '$\dot \phi$ = {} rad$\cdot$s$^-1$'.format(round(phi_dot_range[i], 2)))
-    return point, time_text, phi_dot_text
+    return point, time_text, phi_text, phi_dot_text
 
 
 anim_2D = animation.FuncAnimation(
@@ -189,12 +194,14 @@ circle, = ax.plot(
 
 time_text = ax.text2D(
     0.05, 0.95, "Time", transform=ax.transAxes)  # Time text
+phi_text = ax.text2D(
+    0.05, 0.90, "phi", transform=ax.transAxes)  # phi text
 phi_dot_text = ax.text2D(
-    0.05, 0.90, "phi_dot", transform=ax.transAxes)  # phi_dot text
+    0.05, 0.85, "phi_dot", transform=ax.transAxes)  # phi_dot text
 theta_dot_text = ax.text2D(
-    0.05, 0.85, "$\dot \\theta$ = $\omega$ = {} rad$\cdot$s$^-1$".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
+    0.05, 0.80, "$\dot \\theta$ = $\omega$ = {} rad$\cdot$s$^-1$".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
 radius_text = ax.text2D(
-    0.05, 0.80, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
+    0.05, 0.75, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
 
 
 def animate_3D(i):
@@ -212,11 +219,14 @@ def animate_3D(i):
 
     # Update time text
     time_text.set_text('t = {} s'.format(
-        round(t_range[i], 2)))  
+        round(t_range[i], 2)))
+    # Update phi text
+    phi_text.set_text(
+        '$\phi$ = {} rad'.format(round(phi_range[i], 2)))
     # Update phi_dot text
     phi_dot_text.set_text(
         '$\dot \phi$ = {} rad$\cdot$s$^-1$'.format(round(phi_dot_range[i], 2)))
-    return point, circle, time_text, phi_dot_text
+    return point, circle, time_text, phi_text, phi_dot_text
 
 
 anim_3D = animation.FuncAnimation(
