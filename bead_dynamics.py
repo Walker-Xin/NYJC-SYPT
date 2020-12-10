@@ -9,7 +9,7 @@ import time
 omega = np.pi/0.25  # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
 r = 0.1  # Radius of the loop in meter
-mu = 0.1
+mu = 0.05
 m = 0.01
 b = 0.05
 k = b/m
@@ -21,7 +21,7 @@ phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead
 phi_dot_0 = 0.1  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
 t_max=10 # simulation time in seconds
-iterations=10000 # total number of iterations
+iterations=1000 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
@@ -30,30 +30,46 @@ t_range = np.linspace(0, t_max, iterations)
 # Generating data with numerical DE
 # Defining differential equations
 # Let y be a vector y = [phi_1, phi_2], where phi_1 = phi and phi_2 = phi_dot
-def dy_dt(y, t):
+def dy_dt(t, y):
     # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi)
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0])]
 
 
-def dy_dt_friction(y, t):
+def dy_dt_friction(t, y):
     # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - k*y[1]]
 
 
-def dy_dt_dry_friction(y, t):
-    u = y[1]/np.absolute(y[1])
-    fr = mu*(B*(1-np.cos(y[0]) - y[1]**2 - A*(np.sin(y[0])**2)))
-    return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - u*fr]
+def dy_dt_dry_friction(t, y):
+    if abs(y[1]) < 0.00001: # Stop the calculation when the velocity is essentially zero
+        return [0, 0]
+    else:
+        u = y[1]/np.absolute(y[1])
+        f_r = m*g*(1-np.cos(y[0])) - m*r*(y[1]**2 + A*(np.sin(y[0])**2))
+        f_theta = 2*m*r*omega*np.cos(y[0])*y[1]
+        N = np.sqrt(f_r**2 + f_theta**2)
+        f = u*mu*N
+        return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - f/(m*r)]
     
 
-'''y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
-y_range = integrate.odeint(dy_dt_dry_friction, y_0, t_range)
+start = time.time()
+y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
+
+y_range = integrate.solve_ivp(dy_dt_dry_friction, (0, t_max), y_0, t_eval=t_range) # Solving eqation with ivp solver
+phi_range = y_range.y[0, :]
+phi_dot_range = y_range.y[1, :]
+
+# Uncomment to use ODEint solver (less reliable but much faster); Need to switch the arguments in the integral functions
+'''y_range = integrate.odeint(dy_dt_dry_friction, y_0, t_range) # Solving equation with ODEint solver
 phi_range = y_range[:, 0]
-phi_dot_range = y_range[:, 1]
-theta_range = -omega * t_range'''
+phi_dot_range = y_range[:, 1]'''
+
+theta_range = -omega * t_range
+end = time.time()
+print('Data generation took {} s'.format(round(end-start, 2)))
 
 # Generating data with Euler's method
-theta_range = -omega * t_range
+'''theta_range = -omega * t_range
 
 phi_range=np.zeros(iterations)
 phi_range[0]=phi_0
@@ -72,7 +88,7 @@ for n in range(1,iterations):
 
     u = phi_dot_range[n]/np.absolute(phi_dot_range[n])
     fr = mu*(B*(1-np.cos(phi_range[n]) - phi_dot_range[n]**2 - A*(np.sin(phi_dot_range[n])**2)))
-    phi_dotdot_range[n]=A*np.sin(phi_range[n])*np.cos(phi_range[n]) - B*np.sin(phi_range[n]) + u*fr #z_dotdot
+    phi_dotdot_range[n]=A*np.sin(phi_range[n])*np.cos(phi_range[n]) - B*np.sin(phi_range[n]) + u*fr #z_dotdot'''
 
 # Visualisation
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
