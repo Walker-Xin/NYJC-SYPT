@@ -6,7 +6,7 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import time
 
 # Setting constants
-omega = np.pi/0.30  # Angular velocity of the loop in radian per second
+omega = np.pi/0.25 # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
 r = 0.1  # Radius of the loop in meter
 mu = 0.2
@@ -133,8 +133,6 @@ phi_dot_text = ax.text(
     0.05, 0.85, "phi_dot", transform=ax.transAxes)  # phi_dot text
 theta_dot_text = ax.text(
     0.05, 0.80, "$\dot \\theta$ = $\omega$ = {} rad$\cdot$s$^-1$".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
-radius_text = ax.text(
-    0.05, 0.75, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
 
 
 def animate_2D(i):
@@ -143,11 +141,11 @@ def animate_2D(i):
     point.set_data([x_coord], [y_coord])  # Update bead data
 
     # Update time text
-    time_text.set_text('t = {} s'.format(
-        round(t_range[i], 2)))
+    time_text.set_text(
+        't = {} s'.format(round(t_range[i], 2)))
     # Update phi text
     phi_text.set_text(
-        '$\phi$ = {} rad'.format(round(phi_range[i], 2)))
+        '$\phi$ = {} rad = {} degrees'.format(round(phi_range[i], 2), round(np.degrees(phi_range[i]), 1)))
     # Update phi_dot text
     phi_dot_text.set_text(
         '$\dot \phi$ = {} rad$\cdot$s$^-1$'.format(round(phi_dot_range[i], 2)))
@@ -200,8 +198,6 @@ phi_dot_text = ax.text2D(
     0.05, 0.85, "phi_dot", transform=ax.transAxes)  # phi_dot text
 theta_dot_text = ax.text2D(
     0.05, 0.80, "$\dot \\theta$ = $\omega$ = {} rad$\cdot$s$^-1$".format(round(omega, 2)), transform=ax.transAxes)  # theta_dot text
-radius_text = ax.text2D(
-    0.05, 0.75, '$r$ = {} m'.format(round(r, 2)), transform=ax.transAxes)  # Radius text
 
 
 def animate_3D(i):
@@ -222,7 +218,7 @@ def animate_3D(i):
         round(t_range[i], 2)))
     # Update phi text
     phi_text.set_text(
-        '$\phi$ = {} rad'.format(round(phi_range[i], 2)))
+        '$\phi$ = {} rad = {} degrees'.format(round(phi_range[i], 2), round(np.degrees(phi_range[i]), 1)))
     # Update phi_dot text
     phi_dot_text.set_text(
         '$\dot \phi$ = {} rad$\cdot$s$^-1$'.format(round(phi_dot_range[i], 2)))
