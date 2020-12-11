@@ -66,7 +66,7 @@ start = time.time()
 y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
 
 i = 0
-y_range = integrate.solve_ivp(dy_dt_dry_friction, (0, t_max), y_0, t_eval=t_range) # Solving eqation with ivp solver
+y_range = integrate.solve_ivp(dy_dt_dry_friction, (0, t_max), y_0, t_eval=t_range) # Solving equation with solve_ivp solver
 phi_range = y_range.y[0, :]
 phi_dot_range = y_range.y[1, :]
 
@@ -115,6 +115,7 @@ phi_e_plus = optimize.root_scalar(f_plus, bracket=[0.01, np.pi/2], method='brent
 phi_e_plus = np.full(np.shape(t_range), phi_e_plus)
 phi_e_minus = optimize.root_scalar(f_minus, bracket=[0.01, np.pi/2], method='brentq').root
 phi_e_minus = np.full(np.shape(t_range), phi_e_minus)
+
 # Visualisation
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
 
