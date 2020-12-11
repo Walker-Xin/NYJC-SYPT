@@ -1,5 +1,6 @@
 import numpy as np
 import scipy.integrate as integrate
+import scipy.optimize as optimize
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
@@ -9,7 +10,7 @@ import time
 omega = np.pi/0.25 # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
 r = 0.1  # Radius of the loop in meter
-mu = 0.01
+mu = 0.2
 m = 0.01
 b = 0.05
 k = b/m
@@ -20,12 +21,11 @@ B = g / r
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
 phi_dot_0 = 0.001  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
-t_max=10 # simulation time in seconds
+t_max=20 # simulation time in seconds
 iterations=1000 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
-
 
 # Generating data with numerical DE
 # Defining differential equations
@@ -35,14 +35,24 @@ def dy_dt(t, y):
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0])]
 
 
-def dy_dt_friction(t, y):
+def dy_dt_wet_friction(t, y):
     # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - k*y[1]]
 
 
 def dy_dt_dry_friction(t, y):
-    if abs(y[1]) < 0.00001: # Stop the calculation of phi_dotdot when the phi_dot is essentially zero
-        return [y[1], 0]
+    global i
+    if abs(y[1]) < 0.00001: # Stop the calculation of phi_dotdot when the phi_dot is near zero for 3 consecutive iterations
+        if i > 3:
+            return [y[1], 0]
+        else:
+            i += 1
+            u = y[1]/np.absolute(y[1])
+            f_r = m*g*(1-np.cos(y[0])) - m*r*(y[1]**2 + A*(np.sin(y[0])**2))
+            f_theta = 2*m*r*omega*np.cos(y[0])*y[1]
+            N = np.sqrt(f_r**2 + f_theta**2)
+            f = u*mu*N
+            return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - f/(m*r)]
     else:
         u = y[1]/np.absolute(y[1])
         f_r = m*g*(1-np.cos(y[0])) - m*r*(y[1]**2 + A*(np.sin(y[0])**2))
@@ -55,6 +65,7 @@ def dy_dt_dry_friction(t, y):
 start = time.time()
 y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
 
+i = 0
 y_range = integrate.solve_ivp(dy_dt_dry_friction, (0, t_max), y_0, t_eval=t_range) # Solving eqation with ivp solver
 phi_range = y_range.y[0, :]
 phi_dot_range = y_range.y[1, :]
@@ -90,6 +101,20 @@ for n in range(1,iterations):
     fr = mu*(B*(1-np.cos(phi_range[n]) - phi_dot_range[n]**2 - A*(np.sin(phi_dot_range[n])**2)))
     phi_dotdot_range[n]=A*np.sin(phi_range[n])*np.cos(phi_range[n]) - B*np.sin(phi_range[n]) + u*fr #z_dotdot'''
 
+
+# Calculate projected rest position
+def f_plus(phi):
+    return B - A*np.cos(phi) + mu*(B*(1/np.sin(phi)-1/np.tan(phi)) - A*np.sin(phi))
+
+
+def f_minus(phi):
+    return B - A*np.cos(phi) - mu*(B*(1/np.sin(phi)-1/np.tan(phi)) - A*np.sin(phi))
+
+
+phi_e_plus = optimize.root_scalar(f_plus, bracket=[0.01, np.pi/2], method='brentq').root
+phi_e_plus = np.full(np.shape(t_range), phi_e_plus)
+phi_e_minus = optimize.root_scalar(f_minus, bracket=[0.01, np.pi/2], method='brentq').root
+phi_e_minus = np.full(np.shape(t_range), phi_e_minus)
 # Visualisation
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
 
@@ -99,6 +124,11 @@ axs[0].set_ylabel('$\phi$/rad')
 axs[1].plot(t_range, phi_dot_range)
 axs[1].set_xlabel('t/s')
 axs[1].set_ylabel('$\dot \phi$/rad$\cdot$s$^-1$')
+
+# Add projected rest position
+color = 'tab:red'
+axs[0].plot(t_range, phi_e_minus, color=color)
+axs[0].plot(t_range, phi_e_plus, color=color)
 
 plt.text(
     1.01, 0.05, r'$\dot \phi_0$ = {} rad$\cdot$s$^-1$'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_dot_0 text
