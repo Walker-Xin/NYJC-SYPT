@@ -13,31 +13,30 @@ r = 0.1  # Radius of the loop in meter
 mu = 0.2
 m = 0.01
 b = 0.05
-k = b/m
 
 A = omega**2
 B = g / r
 
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
-phi_dot_0 = 0.001  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
+phi_dot_0 = 0.01  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
-t_max=20 # simulation time in seconds
-iterations=1000 # total number of iterations
-t_step=t_max/iterations # simulation time step
+t_max=10 # Simulation time in seconds
+iterations=10000 # Total number of iterations
+t_step=t_max/iterations # Simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
 
 # Generating data with numerical DE
 # Defining differential equations
 # Let y be a vector y = [phi_1, phi_2], where phi_1 = phi and phi_2 = phi_dot
-def dy_dt(t, y):
+def dy_dt(y, t):
     # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi)
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0])]
 
 
-def dy_dt_wet_friction(t, y):
+def dy_dt_wet_friction(y, t):
     # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
-    return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - k*y[1]]
+    return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - (b/m)*y[1]]
 
 
 def dy_dt_dry_friction(t, y):
@@ -66,23 +65,19 @@ start = time.time()
 y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
 
 i = 0
-y_range = integrate.solve_ivp(dy_dt_dry_friction, (0, t_max), y_0, t_eval=t_range) # Solving equation with solve_ivp solver
+'''y_range = integrate.solve_ivp(dy_dt, (0, t_max), y_0, t_eval=t_range) # Solving equation with solve_ivp solver
 phi_range = y_range.y[0, :]
-phi_dot_range = y_range.y[1, :]
+phi_dot_range = y_range.y[1, :]'''
 
 # Uncomment to use ODEint solver (less reliable but much faster); Need to switch the arguments in the integral functions
-'''y_range = integrate.odeint(dy_dt_dry_friction, y_0, t_range) # Solving equation with ODEint solver
+y_range = integrate.odeint(dy_dt_wet_friction, y_0, t_range) # Solving equation with ODEint solver
 phi_range = y_range[:, 0]
-phi_dot_range = y_range[:, 1]'''
+phi_dot_range = y_range[:, 1]
 
 theta_range = -omega * t_range
-end = time.time()
-print('Data generation took {} s'.format(round(end-start, 2)))
 
 # Generating data with Euler's method
-'''theta_range = -omega * t_range
-
-phi_range=np.zeros(iterations)
+'''phi_range=np.zeros(iterations)
 phi_range[0]=phi_0
 
 phi_dot_range=np.zeros(iterations)
@@ -101,6 +96,20 @@ for n in range(1,iterations):
     fr = mu*(B*(1-np.cos(phi_range[n]) - phi_dot_range[n]**2 - A*(np.sin(phi_dot_range[n])**2)))
     phi_dotdot_range[n]=A*np.sin(phi_range[n])*np.cos(phi_range[n]) - B*np.sin(phi_range[n]) + u*fr #z_dotdot'''
 
+# Compute energy
+E_range = m*(r**2)*(phi_dot_range**2)/2 - m*g*r*np.cos(phi_range) + m*(r**2)*A*np.cos(2*phi_range)/4
+U_range = - m*g*r*np.cos(phi_range) + m*(r**2)*A*np.cos(2*phi_range)/4
+E_grad = np.gradient(E_range, t_step)
+E_grad_ = -2*b*r*(phi_dot_range**2)/20
+
+'''E = m*(r**2)*(phi_dot_0**2)/2 - m*g*r*np.cos(phi_0) + m*(r**2)*A*np.cos(2*phi_0)/4
+E_range_ = []
+for i in range(len(t_range)):
+    E += -2*b*r*(phi_dot_range[i]**2)*t_step
+    E_range_.append(E)'''
+
+end = time.time()
+print('Data generation took {} s'.format(round(end-start, 2)))
 
 # Calculate projected rest position
 def f_plus(phi):
@@ -111,12 +120,12 @@ def f_minus(phi):
     return B - A*np.cos(phi) - mu*(B*(1/np.sin(phi)-1/np.tan(phi)) - A*np.sin(phi))
 
 
-phi_e_plus = optimize.root_scalar(f_plus, bracket=[0.01, np.pi/2], method='brentq').root
+'''phi_e_plus = optimize.root_scalar(f_plus, bracket=[0.01, np.pi/2], method='brentq').root
 phi_e_plus = np.full(np.shape(t_range), phi_e_plus)
 phi_e_minus = optimize.root_scalar(f_minus, bracket=[0.01, np.pi/2], method='brentq').root
-phi_e_minus = np.full(np.shape(t_range), phi_e_minus)
+phi_e_minus = np.full(np.shape(t_range), phi_e_minus)'''
 
-# Visualisation
+# Motion visualisation
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
 
 axs[0].plot(t_range, phi_range)
@@ -127,9 +136,9 @@ axs[1].set_xlabel('t/s')
 axs[1].set_ylabel('$\dot \phi$/rad$\cdot$s$^-1$')
 
 # Add projected rest position
-color = 'tab:red'
+'''color = 'tab:red'
 axs[0].plot(t_range, phi_e_minus, color=color)
-axs[0].plot(t_range, phi_e_plus, color=color)
+axs[0].plot(t_range, phi_e_plus, color=color)'''
 
 plt.text(
     1.01, 0.05, r'$\dot \phi_0$ = {} rad$\cdot$s$^-1$'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_dot_0 text
@@ -137,6 +146,26 @@ plt.text(
     1.01, 0.00, r'$\omega$ = {} rad$\cdot$s$^-1$'.format(round(omega, 2)), transform=plt.gca().transAxes)  # theta_dot_0 text
 plt.text(
     1.01, -0.05, r'$r$ = {} m'.format(round(r, 2)), transform=plt.gca().transAxes)  # Radius text
+
+plt.show()
+plt.close()
+
+# Energy visualisation
+fig, axs = plt.subplots(1, 1, figsize=(12, 7))
+
+axs.plot(t_range, E_range, label='E')
+# axs.plot(t_range, E_range_, label='E_')
+axs.plot(t_range, U_range, label='U')
+axs.set_xlabel('t/s')
+axs.set_ylabel('Energy/J')
+axs.legend()
+
+plt.show()
+plt.close()
+
+plt.plot(t_range, E_grad, label='Calculated')
+plt.plot(t_range, E_grad_, label='Theory')
+plt.legend()
 
 plt.show()
 plt.close()
