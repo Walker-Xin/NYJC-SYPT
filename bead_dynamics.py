@@ -21,7 +21,7 @@ phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead
 phi_dot_0 = 0.01  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
 t_max=10 # Simulation time in seconds
-iterations=10000 # Total number of iterations
+iterations=1000 # Total number of iterations
 t_step=t_max/iterations # Simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
@@ -96,34 +96,41 @@ for n in range(1,iterations):
     fr = mu*(B*(1-np.cos(phi_range[n]) - phi_dot_range[n]**2 - A*(np.sin(phi_dot_range[n])**2)))
     phi_dotdot_range[n]=A*np.sin(phi_range[n])*np.cos(phi_range[n]) - B*np.sin(phi_range[n]) + u*fr #z_dotdot'''
 
-# Compute energy
-E_range = m*(r**2)*(phi_dot_range**2)/2 - m*g*r*np.cos(phi_range) + m*(r**2)*A*np.cos(2*phi_range)/4
-U_range = - m*g*r*np.cos(phi_range) + m*(r**2)*A*np.cos(2*phi_range)/4
-E_grad = np.gradient(E_range, t_step)
-E_grad_ = -2*b*r*(phi_dot_range**2)/20
+# Compute effective energy
+def E_equiv(p, pd):
+    return 0.5*m*(r**2)*(pd**2) - 0.5*m*(r**2)*(omega**2)*(np.sin(p)**2) + m*g*r*(1-np.cos(p))
 
-'''E = m*(r**2)*(phi_dot_0**2)/2 - m*g*r*np.cos(phi_0) + m*(r**2)*A*np.cos(2*phi_0)/4
-E_range_ = []
-for i in range(len(t_range)):
-    E += -2*b*r*(phi_dot_range[i]**2)*t_step
-    E_range_.append(E)'''
+def U_equiv(p, pd):
+    return - 0.5*m*(r**2)*(omega**2)*(np.sin(p)**2) + m*g*r*(1-np.cos(p))
+
+E_range = E_equiv(phi_range, phi_dot_range)
+U_range = U_equiv(phi_range, phi_dot_range)
+
+# Calculate projected rest position and time
+if B/A < 1:
+    phi_e = np.arccos(B/A)
+    print('Equilibrium angle is {}rad'.format(round(phi_e, 3)))
+    loss_equiv = -b*r*np.square(phi_dot_range)
+
+    delta = E_equiv(phi_e, 0) - E_equiv(phi_0, phi_dot_0)
+
+    for i in range(iterations):
+        energy = integrate.trapz(loss_equiv[:i], dx=t_step)
+        r = abs((delta-energy/10)/delta)
+        if r < 0.001:
+            t_e = (i/iterations)*t_max
+            print('At t={}s, the bead achieved final position'.format(round(t_e, 2)))
+            break
+        else:
+            pass
+else:
+    print('The bead is unable to swing up')
+    phi_e = 0
+    print('Equilibrium angle is {}rad'.format(round(phi_e, 3)))
+    t_e = 0
 
 end = time.time()
 print('Data generation took {} s'.format(round(end-start, 2)))
-
-# Calculate projected rest position
-def f_plus(phi):
-    return B - A*np.cos(phi) + mu*(B*(1/np.sin(phi)-1/np.tan(phi)) - A*np.sin(phi))
-
-
-def f_minus(phi):
-    return B - A*np.cos(phi) - mu*(B*(1/np.sin(phi)-1/np.tan(phi)) - A*np.sin(phi))
-
-
-'''phi_e_plus = optimize.root_scalar(f_plus, bracket=[0.01, np.pi/2], method='brentq').root
-phi_e_plus = np.full(np.shape(t_range), phi_e_plus)
-phi_e_minus = optimize.root_scalar(f_minus, bracket=[0.01, np.pi/2], method='brentq').root
-phi_e_minus = np.full(np.shape(t_range), phi_e_minus)'''
 
 # Motion visualisation
 fig, axs = plt.subplots(1, 2, figsize=(12, 7))
@@ -135,10 +142,12 @@ axs[1].plot(t_range, phi_dot_range)
 axs[1].set_xlabel('t/s')
 axs[1].set_ylabel('$\dot \phi$/rad$\cdot$s$^-1$')
 
-# Add projected rest position
-'''color = 'tab:red'
-axs[0].plot(t_range, phi_e_minus, color=color)
-axs[0].plot(t_range, phi_e_plus, color=color)'''
+# Add projected rest position and time
+phi_e_range = np.full(np.shape(t_range), phi_e) 
+color = 'tab:red'
+axs[0].plot(t_range, phi_e_range, color=color, linestyle=':') # Projected rest position
+axs[0].plot(t_e, phi_e, color=color, marker='x')
+axs[1].plot(t_e, 0, color=color, marker='x')
 
 plt.text(
     1.01, 0.05, r'$\dot \phi_0$ = {} rad$\cdot$s$^-1$'.format(phi_dot_0), transform=plt.gca().transAxes)  # phi_dot_0 text
@@ -154,7 +163,6 @@ plt.close()
 fig, axs = plt.subplots(1, 1, figsize=(12, 7))
 
 axs.plot(t_range, E_range, label='E')
-# axs.plot(t_range, E_range_, label='E_')
 axs.plot(t_range, U_range, label='U')
 axs.set_xlabel('t/s')
 axs.set_ylabel('Energy/J')
@@ -163,9 +171,25 @@ axs.legend()
 plt.show()
 plt.close()
 
-plt.plot(t_range, E_grad, label='Calculated')
-plt.plot(t_range, E_grad_, label='Theory')
-plt.legend()
+# Phase diagram
+omega_range = np.linspace(0.01, np.pi/0.15, 1000)
+phi_e_range_plus = np.zeros(np.shape(omega_range))
+phi_e_range_minus = np.zeros(np.shape(omega_range))
+for i in range(np.size(omega_range)):
+    a = omega_range[i]**2
+    if a > B:
+        phi_e_range_plus[i] = np.arccos(B/a)
+        phi_e_range_minus[i] = -np.arccos(B/a)
+    else:
+        pass
+
+fig, axs = plt.subplots(1, 1, figsize=(12, 7))
+
+axs.plot(omega_range, phi_e_range_minus, color='tab:blue')
+axs.plot(omega_range, phi_e_range_plus, color='tab:blue')
+axs.plot(np.sqrt(B), 0, color='tab:red', marker='x')
+axs.set_xlabel('$\omega$/rad$\cdot$s$^-1$')
+axs.set_ylabel('$\phi_e$/rad')
 
 plt.show()
 plt.close()
