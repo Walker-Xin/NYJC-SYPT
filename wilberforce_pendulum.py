@@ -9,13 +9,13 @@ from sympy import symbols, Symbol, Matrix
 import time
 
 # Setting parameters
-m = 0.1109862745 # Mass of the pendulum in kilogram
-I = 1.058/10000 # Moment of inertia of the pendulum in kilogram per meter^2
-k = 2.14 # Spring constant in newton per meter
-delta = (2.04)/1000 # Torsion constant in newton meter
+m = 0.5164 # Mass of the pendulum in kilogram
+I = 1.45/10000 # Moment of inertia of the pendulum in kilogram per meter^2
+k = 2.8 # Spring constant in newton per meter
+delta = (7.86)/10000 # Torsion constant in newton meter
 epsilon = (9.27/1000)/-2 # Coupling constant in newton
-alpha = 0.008 # Friction constant in vertical oscillation
-beta= 0.00008 # Friction constant in angular oscillation
+alpha = 0 # Friction constant in vertical oscillation
+beta= 0 # Friction constant in angular oscillation
 
 lz = alpha/(2*m)
 lt = beta/(2*I)
@@ -30,10 +30,10 @@ c = 4*(epsilon**2)/(m*I)
 omega_1 = np.sqrt(0.5 * (a + np.sqrt(b**2 + c)))
 omega_2 = np.sqrt(0.5 * (a - np.sqrt(b**2 + c)))
 
-z_0 = 0.01 # Initial vertical displacement in meter
-theta_0 = 30/180 * np.pi # Initial angular displacement in radian
+z_0 = 0.1 # Initial vertical displacement in meter
+theta_0 = 0/180 * np.pi # Initial angular displacement in radian
 
-t_max=100 # simulation time in seconds
+t_max=30 # simulation time in seconds
 iterations=10000 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames...'.format(t_step))
@@ -69,7 +69,7 @@ for n in range(1,iterations):
 '''def dy_dt(y, t): # Defining differential equations
     z_1, z_2, theta_1, theta_2 = y
 
-    dy_dt = [z_2, (epsilon/m)*theta_1-(k/m)*z_1-alpha*z_2, theta_2, (epsilon/I)*z_1-(delta/I)*theta_1-beta*theta_2]
+    dy_dt = [z_2, (epsilon/m)*theta_1-(k/m)*z_1-(alpha/m)*z_2, theta_2, (epsilon/I)*z_1-(delta/I)*theta_1-(beta/I)*theta_2]
     return dy_dt
 
 
@@ -94,8 +94,6 @@ def f(r):
 
 phi = Symbol('phi')
 sols = solve(f(phi), phi)
-for sol in sols:
-    print(sol)
 
 r1 = sols[0]
 r2 = sols[1]
@@ -120,6 +118,8 @@ r1 = complex(r1)
 r2 = complex(r2)
 r3 = complex(r3)
 r4 = complex(r4)
+
+print('Eigenfrequencies are: \n {} \n {} \n {} \n {}'.format(r1, r2, r3, r4))
 
 solutions = [complex(item) for item in solutions]
 
@@ -172,7 +172,7 @@ plt.show()
 plt.close()
 
 # Visualisation combined
-fig, ax1 = plt.subplots()
+fig, ax1 = plt.subplots(1, 1, figsize=(12, 7))
 
 color = 'tab:red'
 ax1.set_xlabel('$t$/s')
@@ -186,6 +186,30 @@ color = 'tab:blue'
 ax2.set_ylabel('$z$/cm', color=color)
 ax2.plot(t_range, 100*z_range, color=color)
 ax2.tick_params(axis='y', labelcolor=color)
+
+plt.show()
+plt.close()
+
+# Energy visualisation
+E_range = 0.5*(k*(z_range**2) + delta*(theta_range**2) + m*(z_dot_range**2) + I*(theta_dot_range**2))
+
+E_z_range = 0.5*(k*(z_range**2) + m*(z_dot_range**2))
+
+E_theta_range = 0.5*(delta*(theta_range**2) + I*(theta_dot_range**2))
+
+E_0 = 0.5*(k*(z_0**2) + delta*(theta_0**2))
+
+E_0_range = np.full(np.size(t_range), E_0)
+
+fig, axs = plt.subplots(1, 1, figsize=(12, 7))
+
+axs.plot(t_range, E_theta_range, color = 'tab:green')
+axs.plot(t_range, E_range, color = 'tab:blue')
+axs.plot(t_range, E_z_range, color = 'tab:red')
+axs.plot(t_range, E_0_range, color = 'tab:gray')
+axs.plot(t_range, np.zeros(np.size(t_range)), color = 'tab:gray')
+axs.set_xlabel('t/s')
+axs.set_ylabel('$E_{eff}$/J')
 
 plt.show()
 plt.close()
