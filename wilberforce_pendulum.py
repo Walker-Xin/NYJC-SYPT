@@ -7,18 +7,21 @@ from sympy.solvers import solve
 from sympy.solvers.solveset import linsolve
 from sympy import symbols, Symbol, Matrix
 import time
+import sys
 
 # Setting parameters
-m = 0.5164 # Mass of the pendulum in kilogram
-I = 1.45/10000 # Moment of inertia of the pendulum in kilogram per meter^2
-k = 2.8 # Spring constant in newton per meter
-delta = (7.86)/10000 # Torsion constant in newton meter
-epsilon = (9.27/1000)/-2 # Coupling constant in newton
-alpha = 0 # Friction constant in vertical oscillation
+m = 0.2605 # Mass of the pendulum in kilogram
+I = 4.0772/100000 # Moment of inertia of the pendulum in kilogram per meter^2
+k = 3.968175 # Spring constant in newton per meter
+delta = (6.21)/10000 # Torsion constant in newton meter
+omega_b = 0.12700
+epsilon = omega_b*np.sqrt(k/m)*np.sqrt(m*I) # Coupling constant in newton
+alpha = 0.0033 # Friction constant in vertical oscillation
 beta= 0 # Friction constant in angular oscillation
 
 lz = alpha/(2*m)
-lt = beta/(2*I)
+lt = lz
+beta = lt*2*I
 
 omega_z = np.sqrt(k/m)
 omega_theta = np.sqrt(delta/I)
@@ -30,11 +33,11 @@ c = 4*(epsilon**2)/(m*I)
 omega_1 = np.sqrt(0.5 * (a + np.sqrt(b**2 + c)))
 omega_2 = np.sqrt(0.5 * (a - np.sqrt(b**2 + c)))
 
-z_0 = 0.1 # Initial vertical displacement in meter
+z_0 = -0.05 # Initial vertical displacement in meter
 theta_0 = 0/180 * np.pi # Initial angular displacement in radian
 
-t_max=30 # simulation time in seconds
-iterations=10000 # total number of iterations
+t_max=1000 # simulation time in seconds
+iterations=100000 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames...'.format(t_step))
 t_range = np.linspace(0, t_max, iterations)
@@ -128,6 +131,8 @@ B = solutions[1]
 C = solutions[2]
 D = solutions[3]
 
+print('Constants are: \n A={} \n B={} \n C={} \n D={}'.format(A, B, C, D))
+
 c1 = complex(c1)
 c2 = complex(c2)
 c3 = complex(c3)
@@ -138,6 +143,27 @@ theta_range = np.real(c1*A*np.exp(r1*t_range) + c2*B*np.exp(r2*t_range) + c3*C*n
 z_dot_range = np.real(A*r1*np.exp(r1*t_range) + B*r2*np.exp(r2*t_range) + C*r3*np.exp(r3*t_range) + D*r4*np.exp(r4*t_range))
 theta_dot_range = np.real(c1*A*r1*np.exp(r1*t_range) + c2*B*r2*np.exp(r2*t_range) + c3*C*r3*np.exp(r3*t_range) + c4*D*r4*np.exp(r4*t_range))
 
+# Compute projected stopping time
+E_0 = 0.5*(k*(z_0**2) + delta*(theta_0**2))
+
+import scipy.integrate as integrate
+
+energy_loss_range = alpha*(z_dot_range**2) + beta*(theta_dot_range**2)
+
+for i in range(iterations):
+    loss = integrate.trapz(energy_loss_range[:i], dx=t_step)
+    if abs((loss-E_0)/E_0) < 0.0001:
+        t_e = (i/iterations)*t_max
+        break
+    else:
+        pass
+
+if 't_e' in globals():
+    print('Around t = {}s, the oscillations virtually stoped.'.format(round(t_e, 0)))
+else:
+    print('t_e not found!')
+    t_e = 0
+
 # Visualisation separated
 fig, axs = plt.subplots(2, 2, figsize=(12, 7))
 
@@ -145,19 +171,23 @@ color = 'tab:red'
 axs[0][0].plot(t_range, theta_range, color=color)
 axs[0][0].set_xlabel('t/s')
 axs[0][0].set_ylabel('$\\theta$/rad')
+axs[0][0].plot(t_e, 0, color=color, marker='x')
 color = 'coral'
 axs[1][0].plot(t_range, theta_dot_range, color=color)
 axs[1][0].set_xlabel('t/s')
 axs[1][0].set_ylabel('$\dot \\theta$/rad$\cdot$s$^-1$')
+axs[1][0].plot(t_e, 0, color=color, marker='x')
 
 color = 'tab:blue'
 axs[0][1].plot(t_range, 100*z_range, color=color)
 axs[0][1].set_xlabel('t/s')
 axs[0][1].set_ylabel('$z$/cm')
+axs[0][1].plot(t_e, 0, color=color, marker='x')
 color = 'lightskyblue'
 axs[1][1].plot(t_range, 100*z_dot_range, color=color)
 axs[1][1].set_xlabel('t/s')
 axs[1][1].set_ylabel('$\dot z$/cm$\cdot$s$^-1$')
+axs[1][1].plot(t_e, 0, color=color, marker='x')
 
 plt.text(
     1.01, 0.075, '$m$ = {} kg'.format(m, 2), transform=plt.gca().transAxes)  # m text
@@ -197,19 +227,19 @@ E_z_range = 0.5*(k*(z_range**2) + m*(z_dot_range**2))
 
 E_theta_range = 0.5*(delta*(theta_range**2) + I*(theta_dot_range**2))
 
-E_0 = 0.5*(k*(z_0**2) + delta*(theta_0**2))
-
 E_0_range = np.full(np.size(t_range), E_0)
 
 fig, axs = plt.subplots(1, 1, figsize=(12, 7))
 
-axs.plot(t_range, E_theta_range, color = 'tab:green')
-axs.plot(t_range, E_range, color = 'tab:blue')
-axs.plot(t_range, E_z_range, color = 'tab:red')
+axs.plot(t_range, E_range, color = 'tab:blue', label='E')
+axs.plot(t_range, E_z_range, color = 'tab:red', label='$E_{z}$')
+axs.plot(t_range, E_theta_range, color = 'tab:green', label='$E_{\\theta}$')
 axs.plot(t_range, E_0_range, color = 'tab:gray')
 axs.plot(t_range, np.zeros(np.size(t_range)), color = 'tab:gray')
+axs.plot(t_e, E_range[int(iterations*t_e/t_max)], color = 'tab:blue', marker='x')
 axs.set_xlabel('t/s')
 axs.set_ylabel('$E_{eff}$/J')
+axs.legend()
 
 plt.show()
 plt.close()
@@ -223,7 +253,7 @@ ax.set_zlabel('z')
 ax.axes.set_xlim3d(left=-0.15, right=0.15)
 ax.axes.set_ylim3d(bottom=-0.15, top=0.15)
 ax.axes.set_zlim3d(bottom=1.25*(np.min(z_range)), top=1.25*(np.max(z_range)))
-# ax.view_init(azim=0, elev=90) # Set viewing angle
+ax.view_init(azim=0, elev=0) # Set viewing angle
 
 x = np.zeros(10)
 y = np.linspace(-0.1, 0.1, 10)

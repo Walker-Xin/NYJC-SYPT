@@ -119,7 +119,7 @@ if B/A < 1:
         r = abs((delta-energy/10)/delta)
         if r < 0.001:
             t_e = (i/iterations)*t_max
-            print('At t={}s, the bead achieved final position'.format(round(t_e, 2)))
+            print('Around t={}s, the bead achieved final position'.format(round(t_e, 0)))
             break
         else:
             pass
