@@ -8,15 +8,17 @@ from sympy.solvers.solveset import linsolve
 from sympy import symbols, Symbol, Matrix
 import time
 import sys
+import csv
 
 # Setting parameters
 m = 0.2605 # Mass of the pendulum in kilogram
 I = 4.0772/100000 # Moment of inertia of the pendulum in kilogram per meter^2
 k = 3.968175 # Spring constant in newton per meter
 delta = (6.21)/10000 # Torsion constant in newton meter
-omega_b = 0.12700
+omega_b = 0.12079
 epsilon = omega_b*np.sqrt(k/m)*np.sqrt(m*I) # Coupling constant in newton
 alpha = 0.0033 # Friction constant in vertical oscillation
+alpha = 0.0018
 beta= 0 # Friction constant in angular oscillation
 
 lz = alpha/(2*m)
@@ -33,10 +35,10 @@ c = 4*(epsilon**2)/(m*I)
 omega_1 = np.sqrt(0.5 * (a + np.sqrt(b**2 + c)))
 omega_2 = np.sqrt(0.5 * (a - np.sqrt(b**2 + c)))
 
-z_0 = -0.05 # Initial vertical displacement in meter
+z_0 = -0.041 # Initial vertical displacement in meter
 theta_0 = 0/180 * np.pi # Initial angular displacement in radian
 
-t_max=1000 # simulation time in seconds
+t_max=67.8+0.5*2 # simulation time in seconds
 iterations=100000 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames...'.format(t_step))
@@ -152,7 +154,7 @@ energy_loss_range = alpha*(z_dot_range**2) + beta*(theta_dot_range**2)
 
 for i in range(iterations):
     loss = integrate.trapz(energy_loss_range[:i], dx=t_step)
-    if abs((loss-E_0)/E_0) < 0.0001:
+    if abs((loss-E_0)/E_0) < 0.001:
         t_e = (i/iterations)*t_max
         break
     else:
@@ -192,7 +194,7 @@ axs[1][1].plot(t_e, 0, color=color, marker='x')
 plt.text(
     1.01, 0.075, '$m$ = {} kg'.format(m, 2), transform=plt.gca().transAxes)  # m text
 plt.text(
-    1.01, 0.00, '$I$ = {} kg/m$^2$'.format(round(I, 2)), transform=plt.gca().transAxes)  # I text
+    1.01, 0.00, '$I$ = {} kg/m$^2$'.format(I), transform=plt.gca().transAxes)  # I text
 plt.text(
     1.01, -0.075, '$z_0$ = {} cm'.format(round(100*z_0, 2)), transform=plt.gca().transAxes)  # z_0 text
 plt.text(
@@ -216,6 +218,74 @@ color = 'tab:blue'
 ax2.set_ylabel('$z$/cm', color=color)
 ax2.plot(t_range, 100*z_range, color=color)
 ax2.tick_params(axis='y', labelcolor=color)
+
+plt.show()
+plt.close()
+
+# Experimental data visualisation
+with open('data_z.csv', newline='') as f:
+    reader = csv.reader(f)
+    data = list(reader)
+
+data = data[1:]
+
+t_range_exp = []
+z_range_exp = []
+z_dot_range_exp = []
+theta_range_exp = []
+theta_dot_range_exp = []
+
+for l in data:
+    t_range_exp.append(float(l[0]))
+    z_range_exp.append(float(l[1]))
+    z_dot_range_exp.append(float(l[2]))
+
+reader = csv.reader(open('data_theta.csv', newline=''))
+data = list(reader)
+
+data = data[1:]
+
+for l in data:
+    theta_range_exp.append(-np.radians(float(l[1])))
+    theta_dot_range_exp.append(-np.radians(float(l[2])))
+
+t_range_exp = np.asarray(t_range_exp)
+t_range_exp = t_range_exp-0.53333
+z_range_exp = np.asarray(z_range_exp)
+z_dot_range_exp = np.asarray(z_dot_range_exp)
+theta_range_exp = np.asarray(theta_range_exp)
+theta_dot_range_exp = np.asarray(theta_dot_range_exp)
+
+fig, axs = plt.subplots(2, 2, figsize=(12, 7))
+
+color = 'tab:red'
+axs[0][0].plot(t_range_exp, theta_range_exp, color=color)
+axs[0][0].set_xlabel('t/s')
+axs[0][0].set_ylabel('$\\theta$/rad')
+color = 'coral'
+axs[1][0].plot(t_range_exp, theta_dot_range_exp, color=color)
+axs[1][0].set_xlabel('t/s')
+axs[1][0].set_ylabel('$\dot \\theta$/rad$\cdot$s$^-1$')
+
+color = 'tab:blue'
+axs[0][1].plot(t_range_exp, 100*z_range_exp, color=color)
+axs[0][1].set_xlabel('t/s')
+axs[0][1].set_ylabel('$z$/cm')
+color = 'lightskyblue'
+axs[1][1].plot(t_range_exp, 100*z_dot_range_exp, color=color)
+axs[1][1].set_xlabel('t/s')
+axs[1][1].set_ylabel('$\dot z$/cm$\cdot$s$^-1$')
+
+plt.show()
+plt.close()
+
+# Theory and experimental data comparison
+fig, axs = plt.subplots(2, 1, figsize=(12, 7))
+axs[0].plot(t_range_exp, theta_range_exp, color='tab:blue')
+axs[0].plot(t_range, theta_range, color='tab:red', linestyle='dashed')
+
+axs[1].plot(t_range_exp, z_range_exp, color='tab:blue')
+axs[1].plot(t_range, z_range, color='tab:red', linestyle='dashed')
 
 plt.show()
 plt.close()
