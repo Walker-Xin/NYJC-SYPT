@@ -11,14 +11,14 @@ import sys
 import csv
 
 # Setting parameters
-m = 0.2605 # Mass of the pendulum in kilogram
-I = 4.0772/100000 # Moment of inertia of the pendulum in kilogram per meter^2
-k = 3.968175 # Spring constant in newton per meter
-delta = (6.21)/10000 # Torsion constant in newton meter
-omega_b = 0.12079
+m = (269.4 + 107.42/3)/1000 # Mass of the pendulum in kilogram
+I = (4.29 + 1.2/3)/100000 # Moment of inertia of the pendulum in kilogram per meter^2
+k = 4.19 # Spring constant in newton per meter
+delta = k*I/m # Torsion constant in newton meter
+T = 27.4
+omega_b = np.pi/T
 epsilon = omega_b*np.sqrt(k/m)*np.sqrt(m*I) # Coupling constant in newton
-alpha = 0.0033 # Friction constant in vertical oscillation
-alpha = 0.0018
+alpha = 0.00215 # Friction constant in vertical oscillation
 beta= 0 # Friction constant in angular oscillation
 
 lz = alpha/(2*m)
@@ -36,10 +36,11 @@ omega_1 = np.sqrt(0.5 * (a + np.sqrt(b**2 + c)))
 omega_2 = np.sqrt(0.5 * (a - np.sqrt(b**2 + c)))
 
 z_0 = -0.041 # Initial vertical displacement in meter
-theta_0 = 0/180 * np.pi # Initial angular displacement in radian
+theta_0 = 0 # Initial angular displacement in radian
+# theta_0 = -z_0/np.sqrt(I/m)
 
-t_max=67.8+0.5*2 # simulation time in seconds
-iterations=100000 # total number of iterations
+t_max=1008 # simulation time in seconds
+iterations=10000 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames...'.format(t_step))
 t_range = np.linspace(0, t_max, iterations)
@@ -223,7 +224,7 @@ plt.show()
 plt.close()
 
 # Experimental data visualisation
-with open('data_z.csv', newline='') as f:
+with open('data_wilberforce/data_z', newline='') as f:
     reader = csv.reader(f)
     data = list(reader)
 
@@ -231,50 +232,36 @@ data = data[1:]
 
 t_range_exp = []
 z_range_exp = []
-z_dot_range_exp = []
 theta_range_exp = []
-theta_dot_range_exp = []
 
 for l in data:
     t_range_exp.append(float(l[0]))
     z_range_exp.append(float(l[1]))
-    z_dot_range_exp.append(float(l[2]))
 
-reader = csv.reader(open('data_theta.csv', newline=''))
+reader = csv.reader(open('data_wilberforce/data_theta', newline=''))
 data = list(reader)
 
 data = data[1:]
 
 for l in data:
     theta_range_exp.append(-np.radians(float(l[1])))
-    theta_dot_range_exp.append(-np.radians(float(l[2])))
 
 t_range_exp = np.asarray(t_range_exp)
 t_range_exp = t_range_exp-0.53333
 z_range_exp = np.asarray(z_range_exp)
-z_dot_range_exp = np.asarray(z_dot_range_exp)
 theta_range_exp = np.asarray(theta_range_exp)
-theta_dot_range_exp = np.asarray(theta_dot_range_exp)
 
-fig, axs = plt.subplots(2, 2, figsize=(12, 7))
+fig, axs = plt.subplots(2, 1, figsize=(12, 7))
 
 color = 'tab:red'
-axs[0][0].plot(t_range_exp, theta_range_exp, color=color)
-axs[0][0].set_xlabel('t/s')
-axs[0][0].set_ylabel('$\\theta$/rad')
-color = 'coral'
-axs[1][0].plot(t_range_exp, theta_dot_range_exp, color=color)
-axs[1][0].set_xlabel('t/s')
-axs[1][0].set_ylabel('$\dot \\theta$/rad$\cdot$s$^-1$')
+axs[0].plot(t_range_exp, theta_range_exp, color=color)
+axs[0].set_xlabel('t/s')
+axs[0].set_ylabel('$\\theta$/rad')
 
 color = 'tab:blue'
-axs[0][1].plot(t_range_exp, 100*z_range_exp, color=color)
-axs[0][1].set_xlabel('t/s')
-axs[0][1].set_ylabel('$z$/cm')
-color = 'lightskyblue'
-axs[1][1].plot(t_range_exp, 100*z_dot_range_exp, color=color)
-axs[1][1].set_xlabel('t/s')
-axs[1][1].set_ylabel('$\dot z$/cm$\cdot$s$^-1$')
+axs[1].plot(t_range_exp, 100*z_range_exp, color=color)
+axs[1].set_xlabel('t/s')
+axs[1].set_ylabel('$z$/cm')
 
 plt.show()
 plt.close()
