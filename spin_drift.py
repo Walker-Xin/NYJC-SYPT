@@ -7,10 +7,12 @@ import time
 import sys
 import csv
 
-m = 0.1
-g = 9.81
-r = 0.05
+# Setting constants
+m = 0.1 # Mass of the ring in kilograms
+g = 9.81 # Gravitational accelertaion in meter per second^2
+r = 0.05 # Radius of the ring in meters
 
+# Initial conditions
 D_psi_0 = -0.3*np.pi
 D_theta_0 = 0
 D_phi_0 = 0.3*np.pi
@@ -21,7 +23,7 @@ x_0 = 0
 y_0 = 0
 z_0 = 0
 
-D_phi_0 = -((3/2)*np.sin(theta_0)*(D_psi_0**2) +g/r)/(2*np.tan(theta_0)*(D_psi_0))
+D_phi_0 = -((3/2)*np.sin(theta_0)*(D_psi_0**2) +g/r)/(2*np.tan(theta_0)*(D_psi_0)) # Set conditions to achieve stable state motion
 
 t_max=10 # Simulation time in seconds
 iterations=1000 # Total number of iterations
@@ -29,7 +31,20 @@ t_step=t_max/iterations # Simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
 
-w_0 = [D_psi_0, D_theta_0, D_phi_0, psi_0, theta_0, phi_0, x_0, y_0]
+# Generating data with numerical DE
+# Defining differential equations
+def dy_dt(w, t):
+    D_psi, D_theta, D_phi, psi, theta, phi, x, y = w
+
+    DD_psi = (D_theta*D_phi*np.cos(theta) + D_theta*D_phi)/(0.5*np.sin(theta))
+    DD_theta = (-(3/2)*(D_psi**2)*np.sin(theta)*np.cos(theta) - 2*D_phi*D_psi*np.sin(theta) - (g/r)*np.cos(theta))/(1.5)
+    DD_phi = (3*D_theta*D_psi*np.sin(theta) - 2*np.cos(theta)*DD_psi)/(2)
+    D_x = -r*(D_psi*np.cos(psi)*np.cos(theta) - D_theta*np.sin(psi)*np.sin(theta) + D_phi*np.cos(psi))
+    D_y = -r*(D_psi*np.sin(psi)*np.cos(theta) + D_theta*np.cos(psi)*np.sin(theta) + D_phi*np.sin(psi))
+
+    dy_dt = [DD_psi, DD_theta, DD_phi, D_psi, D_theta, D_phi, D_x, D_y]
+
+    return dy_dt
 
 
 def dy_dt_matrix(w, t):
@@ -58,22 +73,11 @@ def dy_dt_matrix(w, t):
     
     return dy_dt
 
+start = time.time()
+w_0 = [D_psi_0, D_theta_0, D_phi_0, psi_0, theta_0, phi_0, x_0, y_0] # Set initial conditions
 
-def dy_dt(w, t):
-    D_psi, D_theta, D_phi, psi, theta, phi, x, y = w
+w_range = integrate.odeint(dy_dt, w_0, t_range) # Solving equation with ODEint solver
 
-    DD_psi = (D_theta*D_phi*np.cos(theta) + D_theta*D_phi)/(0.5*np.sin(theta))
-    DD_theta = (-(3/2)*(D_psi**2)*np.sin(theta)*np.cos(theta) - 2*D_phi*D_psi*np.sin(theta) - (g/r)*np.cos(theta))/(1.5)
-    DD_phi = (3*D_theta*D_psi*np.sin(theta) - 2*np.cos(theta)*DD_psi)/(2)
-    D_x = -r*(D_psi*np.cos(psi)*np.cos(theta) - D_theta*np.sin(psi)*np.sin(theta) + D_phi*np.cos(psi))
-    D_y = -r*(D_psi*np.sin(psi)*np.cos(theta) + D_theta*np.cos(psi)*np.sin(theta) + D_phi*np.sin(psi))
-
-    dy_dt = [DD_psi, DD_theta, DD_phi, D_psi, D_theta, D_phi, D_x, D_y]
-
-    return dy_dt
-
-
-w_range = integrate.odeint(dy_dt, w_0, t_range)
 psi_dot_range = w_range[:, 0]
 theta_dot_range = w_range[:, 1]
 phi_dot_range = w_range[:, 2]
@@ -84,6 +88,10 @@ x_range = w_range[:, 6]
 y_range = w_range[:, 7]
 z_range = np.zeros(np.size(x_range))
 
+end = time.time()
+print('Data generation took {} s'.format(round(end-start, 2)))
+
+# Motion visualisation
 fig, axs = plt.subplots(2, 3, figsize=(12, 7))
 
 color = 'tab:red'
@@ -113,9 +121,6 @@ axs[1][2].plot(t_range, psi_dot_range, color=color)
 axs[1][2].set_xlabel('t/s')
 axs[1][2].set_ylabel('$\dot \\psi$/rad$\cdot$s$^-1$')
 
-
-plt.text(
-    1.01, 0.075, '$m$ = {} kg'.format(m, 2), transform=plt.gca().transAxes)  # m text
 plt.text(
     1.01, 0.00, '$\\theta_0$ = {} rad'.format(round(theta_0, 2)), transform=plt.gca().transAxes)  # theta_0 text
 plt.text(
@@ -178,7 +183,7 @@ for i in range(np.size(psi_range)):
     zcirc[i] = z_range[i] + circ1*e1[i ,2] + circ2*e2[i, 2]
 
 disk, = ax.plot(
-    xcirc[500], ycirc[500], zcirc[500], color='black', lw=1)  # Initial disk plot
+    xcirc[0], ycirc[0], zcirc[0], color='black', lw=1)  # Initial disk plot
 
 def animate_3D(i):
     disk.set_data(xcirc[i], ycirc[i])  # Update loop data
