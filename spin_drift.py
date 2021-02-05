@@ -13,20 +13,20 @@ g = 9.81 # Gravitational accelertaion in meter per second^2
 r = 0.05 # Radius of the ring in meters
 
 # Initial conditions
-D_psi_0 = -0.3*np.pi
+D_psi_0 = 0
 D_theta_0 = 0
-D_phi_0 = 0.3*np.pi
-psi_0 = 0
-theta_0 = np.radians(80)
-phi_0 = 0
+D_phi_0 = np.pi
+psi_0 = np.radians(0)
+theta_0 = np.radians(89)
+phi_0 = np.radians(0)
 x_0 = 0
 y_0 = 0
 z_0 = 0
 
-D_phi_0 = -((3/2)*np.sin(theta_0)*(D_psi_0**2) +g/r)/(2*np.tan(theta_0)*(D_psi_0)) # Set conditions to achieve stable state motion
+# D_phi_0 = -((3/2)*np.sin(theta_0)*(D_psi_0**2) +g/r)/(2*np.tan(theta_0)*(D_psi_0)) # Set conditions to achieve stable state motion
 
-t_max=10 # Simulation time in seconds
-iterations=1000 # Total number of iterations
+t_max=100 # Simulation time in seconds
+iterations=10000 # Total number of iterations
 t_step=t_max/iterations # Simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
@@ -145,25 +145,34 @@ ax = fig.add_subplot(111, projection='3d')
 ax.set_xlabel('x')
 ax.set_ylabel('y')
 ax.set_zlabel('z')
-ax.axes.set_xlim3d(left=2*np.min(x_range)-r, right=2*np.max(x_range)+r)
-ax.axes.set_ylim3d(bottom=2*np.min(y_range)-r, top=2*np.max(y_range)+r)
-ax.axes.set_zlim3d(bottom=-10*(2*r), top=10*(2*r))
+ax.axes.set_xlim3d(left=np.min(x_range)-r, right=np.max(x_range)+r)
+ax.axes.set_ylim3d(bottom=np.min(y_range)-r, top=np.max(y_range)+r)
+ax.axes.set_zlim3d(bottom=-5*(2*r), top=5*(2*r))
 ax.set_box_aspect((1, 1, 1), zoom=1)
-ax.view_init(azim=0, elev=0) # Set viewing angle
+# ax.view_init(azim=0, elev=45) # Set viewing angle
 
 # A set of angles for generating the inital loop
 circle_angle = np.linspace(0, 2*np.pi, 100)
 circ1 = r*np.cos(circle_angle)
 circ2 = r*np.sin(circle_angle)
 
+# Initialise data sets
+e2pp = np.zeros((np.size(psi_range), 3))
 e1 = np.zeros((np.size(psi_range), 3))
 e2 = np.zeros((np.size(psi_range), 3))
 e3 = np.zeros((np.size(psi_range), 3))
 xcirc = np.zeros((np.size(psi_range), 100))
 ycirc = np.zeros((np.size(psi_range), 100))
 zcirc = np.zeros((np.size(psi_range), 100))
+x_p = np.zeros(np.size(psi_range))
+y_p = np.zeros(np.size(psi_range))
+z_p = np.zeros(np.size(psi_range))
+x_A = np.zeros(np.size(psi_range))
+y_A = np.zeros(np.size(psi_range))
+z_A = np.zeros(np.size(psi_range))
 
 for i in range(np.size(psi_range)):
+    # Setting Euler angles
     R1 = np.matrix([[np.cos(psi_range[i]),  np.sin(psi_range[i]), 0],
                    [-np.sin(psi_range[i]), np.cos(psi_range[i]), 0],
                    [0, 0, 1]])
@@ -174,6 +183,8 @@ for i in range(np.size(psi_range)):
                    [-np.sin(phi_range[i]), np.cos(phi_range[i]), 0],
                    [0, 0, 1]])
 
+    e2pp[i] = (np.matrix([0, 1, 0])*(R2*R1))
+
     e1[i] = (np.matrix([1, 0, 0])*(R3*R2*R1))
     e2[i] = (np.matrix([0, 1, 0])*(R3*R2*R1))
     e3[i] = (np.matrix([0, 0, 1])*(R3*R2*R1))
@@ -182,14 +193,32 @@ for i in range(np.size(psi_range)):
     ycirc[i] = y_range[i] + circ1*e1[i, 1] + circ2*e2[i, 1]
     zcirc[i] = z_range[i] + circ1*e1[i ,2] + circ2*e2[i, 2]
 
+    x_p[i] = x_range[i] - r*e2pp[i, 0]
+    y_p[i] = y_range[i] - r*e2pp[i, 1]
+    z_p[i] = 0
+
+    x_A[i] = x_range[i] + r*e2pp[i, 0]
+    y_A[i] = y_range[i] + r*e2pp[i, 1]
+    z_A[i] = z_range[i] + r*e2pp[i, 2]
+
 disk, = ax.plot(
     xcirc[0], ycirc[0], zcirc[0], color='black', lw=1)  # Initial disk plot
+path, = ax.plot(
+    x_p[0], y_p[0], z_p[0], color='blue', lw=0.7) # Initial path plot
+point, = ax.plot(
+    x_A[0], y_A[0], z_A[0], marker='o', color='red') # Initial fixed point plot
 
 def animate_3D(i):
     disk.set_data(xcirc[i], ycirc[i])  # Update loop data
     disk.set_3d_properties(zcirc[i], 'z')
 
-    return disk,
+    path.set_data(x_p[:i], y_p[:i]) # Updated path data
+    path.set_3d_properties(z_p[:i], 'z')
+
+    point.set_data(x_A[i], y_A[i]) # Updated fixed point data
+    point.set_3d_properties(z_A[i], 'z')
+
+    return disk, path, point,
 
 
 anim_3D = animation.FuncAnimation(
