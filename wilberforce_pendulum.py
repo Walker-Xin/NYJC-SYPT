@@ -154,7 +154,7 @@ energy_loss_range = alpha*(z_dot_range**2) + beta*(theta_dot_range**2)
 
 for i in range(iterations):
     loss = integrate.trapz(energy_loss_range[:i], dx=t_step)
-    if abs((loss-E_0)/E_0) < 0.001:
+    if abs((E_0-loss)/E_0) < 0.001:
         t_e = (i/iterations)*t_max
         break
     else:
