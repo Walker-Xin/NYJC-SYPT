@@ -7,126 +7,90 @@ import mpl_toolkits.mplot3d.axes3d as p3
 import time
 
 # Setting constants
-omega = np.pi/0.25 # Angular velocity of the loop in radian per second
+RPM = 146
+omega = RPM/60*2*np.pi # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
-r = 0.1  # Radius of the loop in meter
-mu = 0.2
-m = 0.01
-b = 0.05
+r = 7.675/100  # Radius of the loop in meter
+R = 0/100 # Radius of the bead in meter
+k = 1 + 2*(r**2)/(5*((r-R)**2)) # Correction factor
+m = 5.23/1000 # Mass of the bead in kilogram
+b = 0.02 # Frcition constant
 
 A = omega**2
-B = g / r
+if R == 0:
+    B = g/r
+else:
+    B = g/(r-R)
 
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
 phi_dot_0 = 0.01  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
-t_max=10 # Simulation time in seconds
-iterations=1000 # Total number of iterations
+t_max=20 # Simulation time in seconds
+iterations=10000 # Total number of iterations
 t_step=t_max/iterations # Simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
 
 # Generating data with numerical DE
 # Defining differential equations
-# Let y be a vector y = [phi_1, phi_2], where phi_1 = phi and phi_2 = phi_dot
-def dy_dt(y, t):
-    # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi)
-    return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0])]
+def wet_friction_ball(y, t):
+    # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
+    return [y[1], (A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - (b/m)*y[1])/k]
 
 
-def dy_dt_wet_friction(y, t):
+def wet_friction_point(y, t):
     # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
     return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - (b/m)*y[1]]
 
 
-def dy_dt_dry_friction(t, y):
-    global i
-    if abs(y[1]) < 0.00001: # Stop the calculation of phi_dotdot when the phi_dot is near zero for 3 consecutive iterations
-        if i > 3:
-            return [y[1], 0]
-        else:
-            i += 1
-            u = y[1]/np.absolute(y[1])
-            f_r = m*g*(1-np.cos(y[0])) - m*r*(y[1]**2 + A*(np.sin(y[0])**2))
-            f_theta = 2*m*r*omega*np.cos(y[0])*y[1]
-            N = np.sqrt(f_r**2 + f_theta**2)
-            f = u*mu*N
-            return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - f/(m*r)]
-    else:
-        u = y[1]/np.absolute(y[1])
-        f_r = m*g*(1-np.cos(y[0])) - m*r*(y[1]**2 + A*(np.sin(y[0])**2))
-        f_theta = 2*m*r*omega*np.cos(y[0])*y[1]
-        N = np.sqrt(f_r**2 + f_theta**2)
-        f = u*mu*N
-        return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - f/(m*r)]
-    
-
 start = time.time()
 y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
 
-i = 0
-'''y_range = integrate.solve_ivp(dy_dt, (0, t_max), y_0, t_eval=t_range) # Solving equation with solve_ivp solver
-phi_range = y_range.y[0, :]
-phi_dot_range = y_range.y[1, :]'''
-
-# Uncomment to use ODEint solver (less reliable but much faster); Need to switch the arguments in the integral functions
-y_range = integrate.odeint(dy_dt_wet_friction, y_0, t_range) # Solving equation with ODEint solver
+y_range = integrate.odeint(wet_friction_point, y_0, t_range) # Solving equation with ODEint solver
 phi_range = y_range[:, 0]
 phi_dot_range = y_range[:, 1]
 
 theta_range = -omega * t_range
 
-# Generating data with Euler's method
-'''phi_range=np.zeros(iterations)
-phi_range[0]=phi_0
-
-phi_dot_range=np.zeros(iterations)
-phi_dot_range[0]=phi_dot_0
-
-phi_dotdot_range=np.zeros(iterations)
-fr = mu*(B*(1-np.cos(phi_0) - phi_dot_0**2 - A*(np.sin(phi_dot_0)**2)))
-phi_dotdot_range[0]=A*np.sin(phi_0)*np.cos(phi_0) - B*np.sin(phi_0) - phi_dot_0/np.absolute(phi_dot_0)*fr
-
-for n in range(1,iterations):
-    phi_range[n]=phi_range[n-1]+phi_dot_range[n-1]*t_step # z
-
-    phi_dot_range[n]=phi_dot_range[n-1]+phi_dotdot_range[n-1]*t_step # z_dot
-
-    u = phi_dot_range[n]/np.absolute(phi_dot_range[n])
-    fr = mu*(B*(1-np.cos(phi_range[n]) - phi_dot_range[n]**2 - A*(np.sin(phi_dot_range[n])**2)))
-    phi_dotdot_range[n]=A*np.sin(phi_range[n])*np.cos(phi_range[n]) - B*np.sin(phi_range[n]) + u*fr #z_dotdot'''
-
 # Compute effective energy
-def E_equiv(p, pd):
-    return 0.5*m*(r**2)*(pd**2) - 0.5*m*(r**2)*(omega**2)*(np.sin(p)**2) + m*g*r*(1-np.cos(p))
+'''def E_equiv(p, pd):
+    return 0.5*m*((r-R)**2)*(pd**2)*k - 0.5*m*((r-R)**2)*(omega**2)*(np.sin(p)**2) + m*g*(r-R)*(1-np.cos(p))
+
 
 def U_equiv(p, pd):
-    return - 0.5*m*(r**2)*(omega**2)*(np.sin(p)**2) + m*g*r*(1-np.cos(p))
+    return - 0.5*m*((r-R)**2)*(omega**2)*(np.sin(p)**2) + m*g*(r-R)*(1-np.cos(p))
+
 
 E_range = E_equiv(phi_range, phi_dot_range)
-U_range = U_equiv(phi_range, phi_dot_range)
+U_range = U_equiv(phi_range, phi_dot_range)'''
 
 # Calculate projected rest position and time
 if B/A < 1:
     phi_e = np.arccos(B/A)
     print('Equilibrium angle is {}rad'.format(round(phi_e, 3)))
-    loss_equiv = -b*r*np.square(phi_dot_range)
+    energy_loss_range = -b*(r-R)*np.square(phi_dot_range)
 
-    delta = E_equiv(phi_e, 0) - E_equiv(phi_0, phi_dot_0)
+    E_0 = 0.5*m*((r-R)**2)*(phi_dot_0**2)*k - 0.5*m*((r-R)**2)*(omega**2)*(np.sin(phi_0)**2) + m*g*(r-R)*(1-np.cos(phi_0))
+
+    E_f = -0.5*m*((r-R)**2)*(omega**2)*(np.sin(phi_e)**2) + m*g*(r-R)*(1-np.cos(phi_e))
 
     for i in range(iterations):
-        energy = integrate.trapz(loss_equiv[:i], dx=t_step)
-        r = abs((delta-energy/10)/delta)
-        if r < 0.001:
+        loss = integrate.trapz(energy_loss_range[:i], dx=t_step)
+        ratio = 1 - abs((loss)/(E_f-E_0))
+        print(ratio)
+        if ratio < 0.001:
             t_e = (i/iterations)*t_max
-            print('Around t={}s, the bead achieved final position'.format(round(t_e, 0)))
             break
-        else:
-            pass
+    else:
+        pass
 else:
     print('The bead is unable to swing up')
     phi_e = 0
-    print('Equilibrium angle is {}rad'.format(round(phi_e, 3)))
+
+if 't_e' in globals():
+    print('Around t = {}s, the oscillations virtually stoped.'.format(round(t_e, 0)))
+else:
+    print('t_e not found!')
     t_e = 0
 
 end = time.time()
@@ -159,20 +123,8 @@ plt.text(
 plt.show()
 plt.close()
 
-# Energy visualisation
-fig, axs = plt.subplots(1, 1, figsize=(12, 7))
-
-axs.plot(t_range, E_range, label='E')
-axs.plot(t_range, U_range, label='U')
-axs.set_xlabel('t/s')
-axs.set_ylabel('Energy/J')
-axs.legend()
-
-plt.show()
-plt.close()
-
 # Phase diagram
-omega_range = np.linspace(0.01, np.pi/0.15, 1000)
+'''omega_range = np.linspace(0.01, np.pi/0.15, 1000)
 phi_e_range_plus = np.zeros(np.shape(omega_range))
 phi_e_range_minus = np.zeros(np.shape(omega_range))
 for i in range(np.size(omega_range)):
@@ -193,7 +145,7 @@ axs.set_ylabel('$\phi_e$/rad')
 
 plt.show()
 plt.close()
-
+'''
 # 2D animation
 fig, ax = plt.subplots(figsize=(8, 8))
 ax.axis([-0.25, 0.25, -0.25, 0.25])
@@ -256,13 +208,13 @@ ax.set_zlabel('z')
 ax.axes.set_xlim3d(left=-0.15, right=0.15)
 ax.axes.set_ylim3d(bottom=-0.15, top=0.15)
 ax.axes.set_zlim3d(bottom=-0.15, top=0.15)
-# ax.view_init(azim=55, elev=45) # Set viewing angle
+ax.view_init(azim=0, elev=90) # Set viewing angle
 
 # A set of angles for generating the inital loop
 circle_angle = np.linspace(0, 2*np.pi, 100)
 
 x = r * np.sin(phi_range) * np.sin(theta_range)
-y = r * np.sin(phi_range) * np.cos(theta_range)
+y = r * np.sin(phi_range)
 z = -r * np.cos(phi_range)
 
 point, = ax.plot([0], [0], [0], marker='.', color='r')  # Initial bead plot
@@ -288,14 +240,14 @@ def animate_3D(i):
     x_coord = x[i]
     y_coord = y[i]
     z_coord = z[i]
-    point.set_data([x_coord], [y_coord])  # Update bead data
+    point.set_data([0], [y_coord])  # Update bead data
     point.set_3d_properties([z_coord], 'z')
 
-    x_circle_new = y_circle * np.sin(theta_range[i])
-    y_circle_new = y_circle * np.cos(theta_range[i])
-    z_circle_new = z_circle
-    circle.set_data(x_circle_new, y_circle_new)  # Update loop data
-    circle.set_3d_properties(z_circle_new, 'z')
+    # x_circle_new = y_circle * np.sin(theta_range[i])
+    # y_circle_new = y_circle * np.cos(theta_range[i])
+    # z_circle_new = z_circle
+    # circle.set_data(x_circle_new, y_circle_new)  # Update loop data
+    # circle.set_3d_properties(z_circle_new, 'z')
 
     # Update time text
     time_text.set_text('t = {} s'.format(
@@ -306,7 +258,7 @@ def animate_3D(i):
     # Update phi_dot text
     phi_dot_text.set_text(
         '$\dot \phi$ = {} rad$\cdot$s$^-1$'.format(round(phi_dot_range[i], 2)))
-    return point, circle, time_text, phi_text, phi_dot_text
+    return point, circle, time_text, phi_text, phi_dot_text, ax
 
 
 anim_3D = animation.FuncAnimation(

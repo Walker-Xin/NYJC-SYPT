@@ -1,5 +1,4 @@
 import numpy as np
-import scipy.integrate as integrate
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
