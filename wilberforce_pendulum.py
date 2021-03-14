@@ -38,8 +38,8 @@ z_0 = -0.041 # Initial vertical displacement in meter
 theta_0 = 0 # Initial angular displacement in radian
 # theta_0 = -z_0/np.sqrt(I/m)
 
-t_max=1008 # simulation time in seconds
-iterations=10000 # total number of iterations
+t_max=100 # simulation time in seconds
+iterations=1000 # total number of iterations
 t_step=t_max/iterations # simulation time step
 print('Producing simulation with {}s between frames...'.format(t_step))
 t_range = np.linspace(0, t_max, iterations)
@@ -93,7 +93,7 @@ z_range = ((delta - I*(omega_1**2))*B*np.cos(omega_1*t_range) + (delta - I*(omeg
 theta_dot_range = -B*omega_1*np.cos(omega_1*t_range) - D*omega_2*np.cos(omega_2*t_range)
 z_dot_range = (-(delta - I*(omega_1**2))*B*omega_1*np.cos(omega_1*t_range) - (delta - I*(omega_2**2))*D*omega_2*np.cos(omega_2*t_range))/epsilon'''
 
-# Generating data with damping with analytical solution
+# Generating data with analytical solution with damping
 def f(r):
     return r**4 + 2*(lz + lt)*(r**3) + (omega_z**2 + omega_theta**2 + 4*lz*lt)*(r**2) + 2*(lz*omega_theta**2 + lt*omega_z**2)*r + (omega_z*omega_theta)**2 - (epsilon**2)/(m*I)
 
@@ -163,7 +163,7 @@ for i in range(iterations):
 if 't_e' in globals():
     print('Around t = {}s, the oscillations virtually stoped.'.format(round(t_e, 0)))
 else:
-    print('t_e not found!')
+    print('t_e not found! (t_e is usually at least 900s. Try setting a longer simulation time range.')
     t_e = 0
 
 # Visualisation separated
@@ -222,60 +222,6 @@ ax2.tick_params(axis='y', labelcolor=color)
 plt.show()
 plt.close()
 
-# Experimental data visualisation
-with open('data_wilberforce/data_z', newline='') as f:
-    reader = csv.reader(f)
-    data = list(reader)
-
-data = data[1:]
-
-t_range_exp = []
-z_range_exp = []
-theta_range_exp = []
-
-for l in data:
-    t_range_exp.append(float(l[0]))
-    z_range_exp.append(float(l[1]))
-
-reader = csv.reader(open('data_wilberforce/data_theta', newline=''))
-data = list(reader)
-
-data = data[1:]
-
-for l in data:
-    theta_range_exp.append(-np.radians(float(l[1])))
-
-t_range_exp = np.asarray(t_range_exp)
-t_range_exp = t_range_exp-0.53333
-z_range_exp = np.asarray(z_range_exp)
-theta_range_exp = np.asarray(theta_range_exp)
-
-fig, axs = plt.subplots(2, 1, figsize=(12, 7))
-
-color = 'tab:red'
-axs[0].plot(t_range_exp, theta_range_exp, color=color)
-axs[0].set_xlabel('t/s')
-axs[0].set_ylabel('$\\theta$/rad')
-
-color = 'tab:blue'
-axs[1].plot(t_range_exp, 100*z_range_exp, color=color)
-axs[1].set_xlabel('t/s')
-axs[1].set_ylabel('$z$/cm')
-
-plt.show()
-plt.close()
-
-# Theory and experimental data comparison
-fig, axs = plt.subplots(2, 1, figsize=(12, 7))
-axs[0].plot(t_range_exp, theta_range_exp, color='tab:blue')
-axs[0].plot(t_range, theta_range, color='tab:red', linestyle='dashed')
-
-axs[1].plot(t_range_exp, z_range_exp, color='tab:blue')
-axs[1].plot(t_range, z_range, color='tab:red', linestyle='dashed')
-
-plt.show()
-plt.close()
-
 # Energy visualisation
 E_range = 0.5*(k*(z_range**2) + delta*(theta_range**2) + m*(z_dot_range**2) + I*(theta_dot_range**2))
 
@@ -309,7 +255,7 @@ ax.set_zlabel('z')
 ax.axes.set_xlim3d(left=-0.15, right=0.15)
 ax.axes.set_ylim3d(bottom=-0.15, top=0.15)
 ax.axes.set_zlim3d(bottom=1.25*(np.min(z_range)), top=1.25*(np.max(z_range)))
-ax.view_init(azim=0, elev=0) # Set viewing angle
+# ax.view_init(azim=0, elev=0) # Set viewing angle
 
 x = np.zeros(10)
 y = np.linspace(-0.1, 0.1, 10)

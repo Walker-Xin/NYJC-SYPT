@@ -5,16 +5,18 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import mpl_toolkits.mplot3d.axes3d as p3
 import time
+import csv
+import os
 
 # Setting constants
-RPM = 146
+RPM = 151
 omega = RPM/60*2*np.pi # Angular velocity of the loop in radian per second
 g = 9.81  # Gravitational accelertaion in meter per second^2
 r = 7.675/100  # Radius of the loop in meter
-R = 0/100 # Radius of the bead in meter
+R = 0.9/100 # Radius of the bead in meter
 k = 1 + 2*(r**2)/(5*((r-R)**2)) # Correction factor
-m = 5.23/1000 # Mass of the bead in kilogram
-b = 0.02 # Frcition constant
+m = 24.17/1000 # Mass of the bead in kilogram
+b = 0.065 # Frcition constant 
 
 A = omega**2
 if R == 0:
@@ -25,8 +27,8 @@ else:
 phi_0 = 0  # Initial angular displacement from -y-axis anticlockwise of the bead in radian
 phi_dot_0 = 0.01  # Initial angular velocity from -y-axis anticlockwise of the bead in radian per second
 
-t_max=20 # Simulation time in seconds
-iterations=10000 # Total number of iterations
+t_max=10 # Simulation time in seconds
+iterations=15000 # Total number of iterations
 t_step=t_max/iterations # Simulation time step
 print('Producing simulation with {}s between frames for {} seconds...'.format(t_step, t_max))
 t_range = np.linspace(0, t_max, iterations)
@@ -38,22 +40,17 @@ def wet_friction_ball(y, t):
     return [y[1], (A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - (b/m)*y[1])/k]
 
 
-def wet_friction_point(y, t):
-    # Solving the equation of motion: phi_dotdot = A*sin(phi)*cos(phi) - B*sin(phi) - k*phi_dot
-    return [y[1], A*np.sin(y[0])*np.cos(y[0]) - B*np.sin(y[0]) - (b/m)*y[1]]
-
-
 start = time.time()
 y_0 = [phi_0, phi_dot_0]  # Setting initial conditions
 
-y_range = integrate.odeint(wet_friction_point, y_0, t_range) # Solving equation with ODEint solver
+y_range = integrate.odeint(wet_friction_ball, y_0, t_range) # Solving equation with ODEint solver
 phi_range = y_range[:, 0]
 phi_dot_range = y_range[:, 1]
 
 theta_range = -omega * t_range
 
 # Compute effective energy
-'''def E_equiv(p, pd):
+def E_equiv(p, pd):
     return 0.5*m*((r-R)**2)*(pd**2)*k - 0.5*m*((r-R)**2)*(omega**2)*(np.sin(p)**2) + m*g*(r-R)*(1-np.cos(p))
 
 
@@ -62,23 +59,24 @@ def U_equiv(p, pd):
 
 
 E_range = E_equiv(phi_range, phi_dot_range)
-U_range = U_equiv(phi_range, phi_dot_range)'''
+U_range = U_equiv(phi_range, phi_dot_range)
 
 # Calculate projected rest position and time
 if B/A < 1:
     phi_e = np.arccos(B/A)
     print('Equilibrium angle is {}rad'.format(round(phi_e, 3)))
-    energy_loss_range = -b*(r-R)*np.square(phi_dot_range)
+    energy_loss_range = -b*np.square((r-R)*phi_dot_range)
 
     E_0 = 0.5*m*((r-R)**2)*(phi_dot_0**2)*k - 0.5*m*((r-R)**2)*(omega**2)*(np.sin(phi_0)**2) + m*g*(r-R)*(1-np.cos(phi_0))
 
     E_f = -0.5*m*((r-R)**2)*(omega**2)*(np.sin(phi_e)**2) + m*g*(r-R)*(1-np.cos(phi_e))
 
+    delta = (E_0 - E_f) # Loss of energy
+
     for i in range(iterations):
         loss = integrate.trapz(energy_loss_range[:i], dx=t_step)
-        ratio = 1 - abs((loss)/(E_f-E_0))
-        print(ratio)
-        if ratio < 0.001:
+        ratio = 1 - abs(loss/delta)
+        if ratio < 0.0001:
             t_e = (i/iterations)*t_max
             break
     else:
@@ -88,7 +86,7 @@ else:
     phi_e = 0
 
 if 't_e' in globals():
-    print('Around t = {}s, the oscillations virtually stoped.'.format(round(t_e, 0)))
+    print('Around t = {}s, the oscillations virtually stoped.'.format(round(t_e, 2)))
 else:
     print('t_e not found!')
     t_e = 0
@@ -124,7 +122,7 @@ plt.show()
 plt.close()
 
 # Phase diagram
-'''omega_range = np.linspace(0.01, np.pi/0.15, 1000)
+omega_range = np.linspace(0.01, np.pi/0.15, 1000)
 phi_e_range_plus = np.zeros(np.shape(omega_range))
 phi_e_range_minus = np.zeros(np.shape(omega_range))
 for i in range(np.size(omega_range)):
@@ -145,7 +143,27 @@ axs.set_ylabel('$\phi_e$/rad')
 
 plt.show()
 plt.close()
-'''
+
+# Energy Visualisation
+fig, axs = plt.subplots(1, 1, figsize=(8, 6))
+
+axs.plot(t_range, E_range, color = 'tab:blue', label='E')
+axs.plot(t_range, U_range, color = 'tab:red', label='U')
+axs.plot(t_range, np.full(np.shape(E_range), E_f), color = 'tab:gray')
+index = int(t_e/t_range.max()*len(t_range))
+axs.plot(t_e, E_range[index], color = 'black', marker='x')
+axs.set_xlabel('t/s')
+axs.set_ylabel('$E_{eff}$/J')
+axs.legend()
+plt.text(0.85, 0.01, r'$r$ = {} cm'.format(round(r*100, 2)), transform=plt.gca().transAxes)  # Radius text
+plt.text(0.85, 0.06, r'$R$ = {} cm'.format(round(R*100, 2)), transform=plt.gca().transAxes)  # Radius text
+
+plt.show()
+plt.close()
+
+import matplotlib.animation as animation
+import mpl_toolkits.mplot3d.axes3d as p3
+
 # 2D animation
 fig, ax = plt.subplots(figsize=(8, 8))
 ax.axis([-0.25, 0.25, -0.25, 0.25])
@@ -243,11 +261,11 @@ def animate_3D(i):
     point.set_data([0], [y_coord])  # Update bead data
     point.set_3d_properties([z_coord], 'z')
 
-    # x_circle_new = y_circle * np.sin(theta_range[i])
-    # y_circle_new = y_circle * np.cos(theta_range[i])
-    # z_circle_new = z_circle
-    # circle.set_data(x_circle_new, y_circle_new)  # Update loop data
-    # circle.set_3d_properties(z_circle_new, 'z')
+    x_circle_new = y_circle * np.sin(theta_range[i])
+    y_circle_new = y_circle * np.cos(theta_range[i])
+    z_circle_new = z_circle
+    circle.set_data(x_circle_new, y_circle_new)  # Update loop data
+    circle.set_3d_properties(z_circle_new, 'z')
 
     # Update time text
     time_text.set_text('t = {} s'.format(
